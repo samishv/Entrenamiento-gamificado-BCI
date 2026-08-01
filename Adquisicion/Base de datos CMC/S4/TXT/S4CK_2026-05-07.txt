@@ -1,0 +1,7 @@
+Participante 4
+Fecha: 2026-05-07 15:41:46
+
+Orden de condiciones:
+1: MI
+2: RE
+3: ME

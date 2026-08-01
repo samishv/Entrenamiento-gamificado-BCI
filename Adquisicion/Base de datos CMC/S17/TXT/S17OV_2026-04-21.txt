@@ -1,0 +1,7 @@
+Participante 17
+Fecha: 2026-04-21 18:08:17
+
+Orden de condiciones:
+1: MI
+2: ME
+3: RE
