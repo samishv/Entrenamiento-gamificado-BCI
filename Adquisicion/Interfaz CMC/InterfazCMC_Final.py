@@ -530,7 +530,7 @@ class ConfiguracionPage(tk.Frame):
         img_frame = tk.Frame(card, bg=BG_LIGHT)
         img_frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-        img_pil = Image.open("vernierDARK.jpg").resize((320, 400))
+        img_pil = Image.open("Vernier.jpg").resize((320, 400))
         img_tk  = ImageTk.PhotoImage(img_pil)
         lbl = tk.Label(img_frame, image=img_tk, bg=BG_LIGHT)
         lbl.pack(expand=True, pady=(30, 10))
