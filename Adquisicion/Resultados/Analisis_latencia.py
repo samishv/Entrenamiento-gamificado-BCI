@@ -1,30 +1,8 @@
-"""
-Análisis de latencia EEG / EMG vs. Dinamómetro
-================================================
-Señales en formato .npy, arreglo 2D (canales x muestras).
-Tres frecuencias de muestreo independientes.
-
-Métodos de detección de onset disponibles:
-  1. Umbral fijo      - supera N% del valor máximo de la señal
-  2. Media + k·std    - supera la media del reposo más k desviaciones estándar
-  3. Cambio de pendiente (Derivada) - primera Derivada supera un umbral
-  4. Energía (RMS)    - envolvente RMS supera umbral (muy útil en EMG)
-
-Uso rápido
-----------
-Edita el bloque "CONFIGURACIÓN" y ejecuta:
-    python latency_analysis.py
-"""
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import resample_poly, butter, filtfilt
 from math import gcd
 
-
-# ─────────────────────────────────────────────
-# CONFIGURACIÓN  
-# ─────────────────────────────────────────────
     # (7 canales × muestras)
 EMG_BASE = r"C:\Users\ikerf\Desktop\Upiita\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2 copia"    
 DINO_BASE = r"C:\Users\ikerf\Desktop\Upiita\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2 copia" 
@@ -34,46 +12,36 @@ canales_emg = ["FCU", "ECRL", "ECU"]
 FS_EMG   = 1000   # Hz
 FS_DINO  = 60   # Hz
 
-# fs_target: todos los canales se remuestrean a esta frecuencia.
-FS_TARGET = 1000  # Hz — fs común para el análisis
+FS_TARGET = 1000 
  
-REPOSO_SEG = 2.0  # segundos de reposo al inicio de CADA señal
+REPOSO_SEG = 2.0 
 DINO_CANAL = 0    # índice del canal del dinamómetro a usar
  
 METODOS = ["Derivada"]
  
-# ── Parámetros de detección ──
+#Parámetros de detección
 UMBRAL_FIJO_PCT  = 0.10    # fracción del máximo global
 MEDIA_STD_K      = 5.0     # media_reposo + k·std
 DERIVADA_PCT     = 0.10    # fracción del máximo de |diff| (más alto = menos falsos positivos)
 RMS_VENTANA_MS   = 100     # ventana RMS en ms
 RMS_K            = 5.0     # media_rms_reposo + k·std
  
-# ── Ventana de búsqueda ──
 # Solo busca onset dentro de este margen DESPUÉS del reposo.
-# Protege contra falsos positivos al final de la señal.
 BUSQUEDA_MAX_SEG = 4.0     # segundos máximos de búsqueda tras el reposo
  
-# ── Suavizado del dinamómetro (media móvil) ──
-# Recomendado cuando la fs del dino es baja (≤100 Hz).
 # Reduce falsas detecciones por variaciones pequeñas al final.
 DINO_SMOOTH_MS   = 200     # ms  (0 = sin suavizado)
  
-# ── Filtros ──
 EMG_BANDPASS  = (5.0, 450.0)
 DINO_BANDPASS = None
 
-# ─────────────────────────────────────────────
-# FIN CONFIGURACIÓN
-# ─────────────────────────────────────────────
- 
 METHOD_COLOR = {"umbral_fijo": "#E24B4A", "media_std": "#7F77DD",
                 "Derivada":    "#BA7517", "energia_rms": "#185FA5"}
 METHOD_LS    = {"umbral_fijo": "-",       "media_std": "--",
                 "Derivada":    "-.",      "energia_rms": ":"}
  
  
-# ── Utilidades ────────────────────────────────
+
  
 def bandpass(sig, fs, lo, hi, order=4):
     nyq = fs / 2.0
@@ -115,10 +83,7 @@ def rms_envelope(sig, fs, window_ms=100):
  
  
 def detect_onset(sig, fs, reposo_seg, method, apply_smooth=False):
-    """
-    Devuelve índice (muestra) del onset o None.
-    La búsqueda se limita a BUSQUEDA_MAX_SEG segundos después del reposo.
-    """
+
     n_rep      = int(reposo_seg * fs)
     n_busqueda = int(BUSQUEDA_MAX_SEG * fs)
  
@@ -159,8 +124,7 @@ def detect_onset(sig, fs, reposo_seg, method, apply_smooth=False):
     return (n_rep + idx[0]) if len(idx) > 0 else None
  
  
-# ── Carga ─────────────────────────────────────
- 
+
 def load_signals():
     print("Cargando archivos...")
     emg_raw  = np.load(EMG_FILE)
@@ -185,9 +149,7 @@ def load_signals():
           f"({dino_rs.shape[1]/FS_TARGET:.2f} s)\n")
     return emg_rs, dino_rs
  
- 
-# ── Análisis ──────────────────────────────────
- 
+  
 def analyze(emg_rs, dino_rs):
     dino_ch = dino_rs[DINO_CANAL]
     fs      = FS_TARGET
@@ -233,9 +195,7 @@ def analyze(emg_rs, dino_rs):
  
     return resultados
  
- 
-# ── Tabla resumen ─────────────────────────────
- 
+  
 def print_summary(resultados):
     print("═" * 54)
     print(f"{'MÉTODO':<20} {'LATENCIA CLICK (ms)':>22}")
@@ -247,25 +207,22 @@ def print_summary(resultados):
         else:
             print(f"{m:<20} {r['media_ms']:>+12.2f}  ±{r['std_ms']:.2f}")
     print("═" * 54)
-    print("Positivo → EMG arrancó DESPUÉS del dinamómetro.")
-    print("Negativo → EMG arrancó ANTES  del dinamómetro.\n")
+    print("Positivo - EMG arrancó DESPUÉS del dinamómetro.")
+    print("Negativo - EMG arrancó ANTES  del dinamómetro.\n")
  
  
-# ── Gráfica ───────────────────────────────────
- 
+
 def plot_results(emg_rs, dino_rs, resultados, sujeto="S5"):
     fs     = FS_TARGET
     t_dino = np.arange(dino_rs.shape[1]) / fs
     t_emg  = np.arange(emg_rs.shape[1])  / fs
  
-    # Señal del dino suavizada (para mostrar lo que ve el detector)
     dino_ch      = dino_rs[DINO_CANAL]
     dino_smooth  = smooth(dino_ch, fs, DINO_SMOOTH_MS)
  
     fig, (ax_dino, ax_emg) = plt.subplots(2, 1, figsize=(13, 7), sharex=False)
     fig.subplots_adjust(hspace=0.6)
  
-    # ── Panel dinamómetro ──
     ax_dino.plot(t_dino, dino_ch,     color="#1D9E75", lw=1.2, alpha=0.4, label="Dinamómetro (crudo)")
     ax_dino.plot(t_dino, dino_smooth, color="#1D9E75", lw=2.0, label=f"Dinamómetro (suavizado)")
     ax_dino.set_ylabel("Fuerza (N)", fontsize=13)
@@ -280,7 +237,6 @@ def plot_results(emg_rs, dino_rs, resultados, sujeto="S5"):
                         lw=1.4, ls=METHOD_LS[method], label=method)
     ax_dino.legend(loc="upper left", fontsize=12)
  
-    # ── Panel EMG ──
     orgs = plt.cm.Oranges(np.linspace(0.45, 0.9, emg_rs.shape[0]))
     sep  = 500
     for i, ch in enumerate(emg_rs):
@@ -315,7 +271,6 @@ def plot_results(emg_rs, dino_rs, resultados, sujeto="S5"):
     plt.savefig(f"click_latency_{sujeto}.png", dpi=150, bbox_inches="tight")
     print(f"Gráfica guardada: click_latency_{sujeto}.png")
  
-    # ── Barras de resumen ──
     metodos_v = [m for m in METODOS if resultados.get(m)]
     if not metodos_v:
         print("[!] Sin resultados para graficar barras.")
@@ -347,10 +302,7 @@ def plot_results(emg_rs, dino_rs, resultados, sujeto="S5"):
     plt.show()
  
  
-# ── Resumen global (todas las iteraciones) ────
- 
 def print_global_summary(todas_iteraciones):
-    """Calcula y muestra estadísticas globales de todas las iteraciones."""
     print("\n" + "═" * 70)
     print(" RESUMEN GLOBAL DE TODAS LAS ITERACIONES")
     print("═" * 70)
@@ -379,7 +331,6 @@ def print_global_summary(todas_iteraciones):
 
 
 def plot_global_results(todas_iteraciones):
-    """Genera gráficas consolidadas de todas las iteraciones."""
     # Recolectar datos globales por método
     datos_por_metodo = {}
     for method in METODOS:
@@ -396,7 +347,6 @@ def plot_global_results(todas_iteraciones):
         print("[!] Sin datos para graficar resultados globales.")
         return
     
-    # ─── Figura 1: Boxplot y distribución ───
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     
     # Boxplot
@@ -459,8 +409,7 @@ def plot_global_results(todas_iteraciones):
     plt.show()
 
 
-# ── Main ──────────────────────────────────────
- 
+
 if __name__ == "__main__":
     todas_iteraciones = []
     
