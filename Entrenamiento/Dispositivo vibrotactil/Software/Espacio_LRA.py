@@ -39,7 +39,6 @@ def on_notify(sender, data):
                 print(f"  Resultado: {'Exitosa' if estado == 'OK' else 'Fallida'}")
 
 def enviar_vibracion(intensidad, delay_ms):
-    """Envía desde el hilo de pygame al loop asyncio de BLE."""
     if cliente_ble is None:
         return
     cmd = f"{intensidad},{delay_ms}"
@@ -85,8 +84,7 @@ def main():
     print("Esperando conexión BLE...")
     while cliente_ble is None:
         import time; time.sleep(0.1)
-
-    # ── Pygame ──────────────────────────────────────────────
+    
     pygame.init()
     screen = pygame.display.set_mode((400, 300))
     pygame.display.set_caption("ESP32 Vibración")
