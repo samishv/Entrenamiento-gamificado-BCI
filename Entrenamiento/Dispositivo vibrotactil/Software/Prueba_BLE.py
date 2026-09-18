@@ -18,8 +18,7 @@ async def enviar_parametros(intensidad: int, delay_ms: int):
         print(f"Enviado → intensidad={intensidad}, delay={delay_ms}ms")
 
 if __name__ == "__main__":
-    # Cambia estos valores a gusto
-    INTENSIDAD = 150   # 0–255
+    INTENSIDAD = 150   # 0–127
     DELAY_MS   = 3000  # milisegundos
 
     asyncio.run(enviar_parametros(INTENSIDAD, DELAY_MS))
