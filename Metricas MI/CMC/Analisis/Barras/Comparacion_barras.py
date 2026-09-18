@@ -6,43 +6,35 @@ import numpy as np
 import os
 import sys
 from pathlib import Path
-# ─────────────────────────────────────────────────────────────────────────────
-#  CONFIGURACIÓN  
-# ─────────────────────────────────────────────────────────────────────────────
 
-# True  → genera UNA gráfica por CADA combinación músculo × electrodo del archivo
-# False → genera solo la combinación indicada en MUSCULO / ELECTRODO
+#  CONFIGURACIÓN  
+
 carpeta = Path(r"Reportes_excel_instar\Reportes_excel_AreaCompleta")
-# ── Carpeta de salida para las imágenes ───────────────────────────────────────
+# Carpeta de salida para las imágenes 
 CARPETA_SALIDA = "graficas_coherencia_instar"
+# True genera UNA gráfica por CADA combinación músculo × electrodo del archivo
+# False genera solo la combinación indicada en MUSCULO / ELECTRODO
 TODAS_LAS_COMBINACIONES = True
 
 MUSCULO   = "FCU"   # Solo se usa si TODAS_LAS_COMBINACIONES = False
 ELECTRODO = "Fz"    # Solo se usa si TODAS_LAS_COMBINACIONES = False
 
-# ── Métricas ──────────────────────────────────────────────────────────────────
 METRICAS = ["Max_Beta","Area_Beta"]
 
 ETIQUETAS_METRICAS = ["Máximo", "Área"]
 
-# Orden deseado de los sujetos (deja vacío [] para orden alfabético automático)
-ORDEN_SUJETOS = ["S17", "S6", "S7", "S18", "S4", "S5"]  # ejemplo, usa tus nombres reales
-# ── Nombres de columnas ───────────────────────────────────────────────────────
+# Orden deseado de los sujetos 
+ORDEN_SUJETOS = ["S17", "S6", "S7", "S18", "S4", "S5"]  
 COL_SUJETO  = "Sujeto"
 COL_MUSCULO = "Musculo"
 COL_CANAL   = "Canal_EEG"
 
-
-
-# ── Colores por sujeto (se extienden automáticamente si hay más sujetos) ──────
+# Colores por sujeto (se extienden automáticamente si hay más sujetos) 
 PALETA_BASE = ["#4C72B0", "#21A1B3", "#73D973", "#CDD757",
                "#8172B3", "#FB568A"]
 
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 #  CARGA Y VALIDACIÓN
-# ─────────────────────────────────────────────────────────────────────────────
+
 def cargar_datos(ruta: str) -> pd.DataFrame:
     ext = os.path.splitext(ruta)[1].lower()
     if ext in (".xlsx", ".xls"):
@@ -67,9 +59,7 @@ def validar_columnas(df: pd.DataFrame):
                  f"   Columnas disponibles: {list(df.columns)}")
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  GRÁFICA
-# ─────────────────────────────────────────────────────────────────────────────
 def graficar(df_filtrado: pd.DataFrame,
              musculo: str,
              electrodo: str,
@@ -77,11 +67,7 @@ def graficar(df_filtrado: pd.DataFrame,
              colores_globales: dict,
              carpeta: str,
              metodo: str):
-    """
-    Dibuja y guarda la gráfica de barras para una combinación músculo/electrodo.
-    sujetos_globales y colores_globales garantizan colores consistentes en
-    todas las gráficas del mismo run.
-    """
+  
     sujetos_presentes = [s for s in sujetos_globales if s in df_filtrado[COL_SUJETO].unique()]
     n_sujetos  = len(sujetos_presentes)
     n_metricas = len(METRICAS)
@@ -117,7 +103,6 @@ def graficar(df_filtrado: pd.DataFrame,
                         fontsize=13, rotation=90,
                         color="#222222")
 
-    # ── Estética ──────────────────────────────────────────────────────────────
     ax.set_xticks(x)
     ax.set_xticklabels(ETIQUETAS_METRICAS, fontsize=14)
     ax.set_ylabel("Valor de Coherencia", fontsize=14)
@@ -157,9 +142,7 @@ def extraer_desde_tercera_parte(nombre_archivo):
     return None
 
 
-# ─────────────────────────────────────────────────────────────────────────────
 #  MAIN
-# ─────────────────────────────────────────────────────────────────────────────
 def main():
     # Crear carpeta de salida
     os.makedirs(CARPETA_SALIDA, exist_ok=True)
@@ -185,14 +168,12 @@ def main():
         df[COL_SUJETO] = df[COL_SUJETO].replace(MAPEO_SUJETOS)
         ORDEN_SUJETOS = ["S1", "S2", "S3", "S4", "S5", "S6"]
 
-        # Asignar color fijo a cada sujeto (consistente en todas las gráficas)
+        # Asignar color fijo a cada sujeto 
         sujetos_unicos = df[COL_SUJETO].unique().tolist()
         print("VALORES REALES en columna Sujeto:", sujetos_unicos)
         print("ORDEN_SUJETOS configurado:       ", ORDEN_SUJETOS)
         if ORDEN_SUJETOS:
-            # Usa el orden indicado, pero solo con los sujetos que sí existen en el archivo
             sujetos_globales = [s for s in ORDEN_SUJETOS if s in sujetos_unicos]
-            # Agrega al final cualquier sujeto no listado en ORDEN_SUJETOS (por si acaso)
             faltantes = [s for s in sujetos_unicos if s not in ORDEN_SUJETOS]
             sujetos_globales += sorted(faltantes)
         else:
