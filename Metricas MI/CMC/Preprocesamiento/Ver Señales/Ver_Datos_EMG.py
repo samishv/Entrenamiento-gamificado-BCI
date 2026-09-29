@@ -15,28 +15,21 @@ from Procesamiento_Funciones import (
     emg_envelope,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIGURACIÓN
-# ─────────────────────────────────────────────────────────────────────────────
-
 if "RUTA_EMG" not in globals():
     RUTA_EMG = r"D:\luiso\Documentos\Luis\UPIITA\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2\S5\EMG\S5_260429_EMG_OV_1_ME.npy"
-    # RUTA_EMG = r"D:\luiso\Documentos\Luis\UPIITA\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2\S18\EMG\S18_260429_EMG_OV_1_ME.npy"
 
 if "RUTA_DINAM" not in globals():
     RUTA_DINAM = r"D:\luiso\Documentos\Luis\UPIITA\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2\S5\DINAM\S5_260429_DINAM_OV_1_ME.npy"
-    # RUTA_DINAM = r"D:\luiso\Documentos\Luis\UPIITA\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2\S18\DINAM\S18_260429_DINAM_OV_1_ME.npy"
 
-FS = 1000                 # Frecuencia de muestreo EMG (Hz)
-ORDEN_BP = 3              # Orden Butterworth
-PAD_MUESTRAS = 5 * FS     # Padding reflect (muestras). 3 s
-
-FREQS_NOTCH = [19.6, 60, 120, 180, 240, 300]  # Hz
+FS = 1000                
+ORDEN_BP = 3              
+PAD_MUESTRAS = 5 * FS
+FREQS_NOTCH = [19.6, 60, 120, 180, 240, 300]
 Q_NOTCH = 200
 
 FIGURAS = [
-    # ("EMG Completo", 10, 450.0),
-    # ("EMG Completo RESAMPLED", 2.0, 113.0),
+    ("EMG Completo", 10, 450.0),
+    ("EMG Completo RESAMPLED", 2.0, 113.0),
     ("EMG Completo COHERENCIA", 5.0, 45.0),
 ]
 
@@ -53,13 +46,9 @@ COLOR_TITLE = "#ffffff"
 
 WAVELET =       'db4'
 LEVEL =         6
-NIVELES_CERO =  [1, 6]     # D6 y D1
-REMOVE_APPROX = True       # A6
+NIVELES_CERO =  [1, 6]    
+REMOVE_APPROX = True       
 WAVE_MODE =     'reflect'
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PARSEO DE NOMBRE DE ARCHIVO
-# ─────────────────────────────────────────────────────────────────────────────
 
 CONDICION_MAP = {
     "OV": "Ojos Abiertos - Movimiento Visual",
@@ -76,24 +65,20 @@ ESTADO_MAP = {
 
 
 def parsear_nombre_archivo(ruta):
-    nombre = os.path.splitext(os.path.basename(ruta))[0]        # 'S17_260310_EEG_CK_3_RE'
-    partes = nombre.split('_')                                  # ['S17','260310','EEG','CK','3','RE']
+    nombre = os.path.splitext(os.path.basename(ruta))[0]        
+    partes = nombre.split('_')                                
 
-    sujeto    = partes[0]                                       # 'S17'
-    condicion = partes[3]                                       # 'CK'
-    estado    = partes[5]                                       # 'RE'
+    sujeto    = partes[0]                                    
+    condicion = partes[3]                                  
+    estado    = partes[5]                                      
 
-    num_sujeto   = sujeto[1:]                                   # '17'
+    num_sujeto   = sujeto[1:]                                  
     desc_cond    = CONDICION_MAP.get(condicion, condicion)
     desc_estado  = ESTADO_MAP.get(estado, estado)
 
     return f"Sujeto {num_sujeto}  |  {desc_cond}  |  {desc_estado}"
 
 PIE_FIGURA = parsear_nombre_archivo(RUTA_DINAM)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCIONES
-# ─────────────────────────────────────────────────────────────────────────────
 
 def pantalla_completa(fig):
     try:
@@ -107,12 +92,6 @@ def pantalla_completa(fig):
         fig.set_size_inches(19, 10.5)
     except:
         fig.set_size_inches(19, 10.5)
-        
-# def nombre_salida(ruta):
-#     CARPETA_IMGS = r"D:\luiso\Documentos\Luis\UPIITA\TT\CMC\IMGS"
-#     os.makedirs(CARPETA_IMGS, exist_ok=True)          # la crea si no existe
-#     nombre = os.path.splitext(os.path.basename(ruta))[0]
-#     return os.path.join(CARPETA_IMGS, f"{nombre}.svg")
 
 def estilo_ax(ax):
     ax.set_facecolor(BG_AX)
@@ -143,17 +122,14 @@ def plot_figura(nombre, emg_filt, dinam, t_e, t_d, f_low, f_high, fs, pie):
         left=0.035, right=0.985, top=0.96, bottom=0.08
     )
 
-    # ── Columna 0: FFT — filas 0-2 comparten X e Y; fila 3 independiente ──
     ax_fft0 = fig.add_subplot(gs[0, 0])
     ax_fft1 = fig.add_subplot(gs[1, 0], sharex=ax_fft0, sharey=ax_fft0)
     ax_fft2 = fig.add_subplot(gs[2, 0], sharex=ax_fft0, sharey=ax_fft0)
-    ax_fft3 = fig.add_subplot(gs[3, 0])   # independiente, se ocultará
-
-    # ── Columna 1: señales — filas 0-2 comparten X e Y entre sí; independiente de col 0
+    ax_fft3 = fig.add_subplot(gs[3, 0]) 
     ax_sig0 = fig.add_subplot(gs[0, 1])
     ax_sig1 = fig.add_subplot(gs[1, 1], sharex=ax_sig0, sharey=ax_sig0)
     ax_sig2 = fig.add_subplot(gs[2, 1], sharex=ax_sig0, sharey=ax_sig0)
-    ax_din  = fig.add_subplot(gs[3, 1], sharex=ax_sig0)   # dinamómetro, independiente
+    ax_din  = fig.add_subplot(gs[3, 1], sharex=ax_sig0)  
 
     axes = np.array([
         [ax_fft0, ax_sig0],
@@ -169,11 +145,8 @@ def plot_figura(nombre, emg_filt, dinam, t_e, t_d, f_low, f_high, fs, pie):
         ax_sig = axes[i, 1]
         color  = COLORES_EMG[i]
 
-        # ── Label del músculo ─────────────────────────────────────────────
         ax_fft.set_ylabel(MUSCULOS[i], color=color, fontsize=9,
                           rotation=90, labelpad=12, va='center')
-
-        # ── FFT (columna izquierda) ───────────────────────────────────────
         freqs, mag = calcular_fft(emg_filt[i], fs)
         ax_fft.plot(freqs, mag, color=color, linewidth=0.75, alpha=0.92)
         ax_fft.set_xlim(0, fs / 2)
@@ -181,27 +154,22 @@ def plot_figura(nombre, emg_filt, dinam, t_e, t_d, f_low, f_high, fs, pie):
         if i == 0:
             ax_fft.set_title("FFT  [|X(f)|]", color=COLOR_LABEL, fontsize=8, pad=3)
 
-        # ── Señal procesada (columna derecha) ─────────────────────────────
         ax_sig.plot(t_e, emg_filt[i], color=color, linewidth=0.75, alpha=0.92)
         ax_sig.set_xlim(t_e[0], t_e[-1])
         estilo_ax(ax_sig)
         if i == 0:
             ax_sig.set_title("Señal filtrada  [µV]", color=COLOR_LABEL, fontsize=8, pad=3)
 
-    # ── Ocultar filas intermedias (sin sharex que interfiera) ────────────
     for i in range(n_canales - 1):
         plt.setp(axes[i, 0].get_xticklabels(), visible=False)
         plt.setp(axes[i, 1].get_xticklabels(), visible=False)
 
-    # ── Última fila EMG: mostrar labels y xlabel ──────────────────────────
     plt.setp(axes[n_canales - 1, 0].get_xticklabels(), visible=True, color=COLOR_TICK)
     plt.setp(axes[n_canales - 1, 1].get_xticklabels(), visible=True, color=COLOR_TICK)
     axes[n_canales - 1, 0].set_xlabel("Frecuencia [Hz]", color=COLOR_LABEL, fontsize=8)
 
-    # ── Fila 4 col 0: ocultar ─────────────────────────────────────────────
     axes[3, 0].set_visible(False)
 
-    # ── Fila 4 col 1: dinamómetro ─────────────────────────────────────────
     ax_din = axes[3, 1]
     ax_din.plot(t_d, dinam, color=COLOR_DINAM, linewidth=1.5, alpha=0.95)
     ax_din.set_ylabel("DINAMÓMETRO\n[N]", color=COLOR_DINAM,
@@ -212,29 +180,18 @@ def plot_figura(nombre, emg_filt, dinam, t_e, t_d, f_low, f_high, fs, pie):
     estilo_ax(ax_din)
     plt.setp(ax_din.get_xticklabels(), visible=True, color=COLOR_TICK)
 
-    # ── Título y pie ──────────────────────────────────────────────────────
     fig.suptitle(
         f"{nombre}  —  Butterworth ord. {ORDEN_BP}  |  {f_low}–{f_high} Hz  |  Fs = {fs} Hz",
         color=COLOR_TITLE, fontsize=11, fontweight='bold'
     )
     fig.text(0.5, 0.005, pie, ha='center', va='bottom',
              fontsize=8, color=COLOR_LABEL, style='italic', fontweight='bold')
-    
-    # ruta_svg = nombre_salida(RUTA_EMG)
-    # fig.savefig(ruta_svg, format='svg', bbox_inches='tight',
-    #             facecolor=fig.get_facecolor())
-    # print(f"\n  Figura guardada en: {ruta_svg}")
 
     pantalla_completa(fig)
     return fig
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PROCESAR SEÑALES
-# ─────────────────────────────────────────────────────────────────────────────
-
-# 1) Cargar
-emg_data   = cargar_npy_emg(RUTA_EMG)         # (canales x muestras)
-dinam_data = cargar_npy_dinam(RUTA_DINAM)     # (muestras,)
+emg_data   = cargar_npy_emg(RUTA_EMG)         
+dinam_data = cargar_npy_dinam(RUTA_DINAM)   
 
 n_canales  = emg_data.shape[0]
 n_muestras = emg_data.shape[1]
@@ -243,7 +200,6 @@ t_emg      = np.linspace(0, emg_data.shape[1]/FS, n_muestras)
 n_dinam  = len(dinam_data)
 t_dinam = np.linspace(0, emg_data.shape[1]/FS, n_dinam)
 
-# 2) Notchs en cascada
 emg_proc = aplicar_notch_multiple(
     emg_data,
     fs=FS,
@@ -253,20 +209,14 @@ emg_proc = aplicar_notch_multiple(
 )
 print(f"\n  [OK] Notch aplicado: {FREQS_NOTCH} Hz  |  Q={Q_NOTCH}  |  pad={PAD_MUESTRAS} muestras")
 
-# 3) Resampleo PROMEDIO
 emg_proc = resamplear_por_promedio(emg_proc,4)
 
-# 3) resampleo LIBRERIA
-# emg_proc = resamplear_profesional(emg_proc, 1000, 250)
-
-# 3) CONTINUACION
-FS = FS / 4  # Ahora FS pasa de 1000 a 250 Hz
+FS = FS / 4  
 n_muestras = emg_proc.shape[1]
 t_emg = np.linspace(0, n_muestras / FS, n_muestras)
 
 print(f"\n  [OK] Resampleo aplicado. Nueva FS: {FS} Hz | Muestras: {n_muestras}")
 
-# 4) WAVELETS
 emg_proc = aplicar_wavelet_dwt_multicanal(
     emg_proc,
     wavelet=WAVELET,
@@ -278,7 +228,6 @@ emg_proc = aplicar_wavelet_dwt_multicanal(
 )
 print(f"  [OK] Wavelet aplicado: {WAVELET} | level={LEVEL} | cero={NIVELES_CERO} | remove A{LEVEL}={REMOVE_APPROX}")
 
-# 5) Pasa Banda y Plot
 for nombre, f_low, f_high in FIGURAS:
     print(f"\n → Generando: {nombre} ({f_low:.1f}–{f_high:.1f} Hz)")
 
@@ -290,11 +239,7 @@ for nombre, f_low, f_high in FIGURAS:
         orden=ORDEN_BP,
         pad=PAD_MUESTRAS,
     )
-    
-    # 6) Rectificar Señales
-    # emg_final = rectificar_senal(emg_final, tipo='completa')
-    
-    # # 7) ENVOLVEMENTE SEÑAL
+
     for i in range(emg_final.shape[0]):
         emg_final[i, :] = emg_envelope(emg_final[i, :], fs=FS, tc_ms=20, rectify="full")
     

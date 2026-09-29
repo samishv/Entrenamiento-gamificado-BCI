@@ -12,31 +12,24 @@ from Procesamiento_Funciones import (
     aplicar_pasabanda_butter,
 )
 
-# ─────────────────────────────────────────────────────────────────────────────
-# CONFIGURACIÓN
-# ─────────────────────────────────────────────────────────────────────────────
 
 if "RUTA_NPY" not in globals():
     RUTA_NPY = r"D:\luiso\Documentos\Luis\UPIITA\TT\Entrenamiento-BCI\DataCMC\Registros CMC 2\S5\EEG\S5_260429_EEG_OK_1_ME.npy"
-
 FS = 250
-
 VENTANA_SEG = 1.0
 NPERSEG = int(VENTANA_SEG * FS)
-
 PAD_MUESTRAS = 5 * FS
-
 CANALES = ['Fz', 'FC3', 'FCz', 'FC4', 'Cz', 'C3', 'C4']
 
 FIGURAS = [
-    # ('EEG Completo',    0.5,  45.0),
-    # ('Delta δ',         0.5,   4.0),
-    # ('Theta θ',         4.0,   8.0),
-    # ('Mu μ',            8.0,  13.0),
-    # ('Beta β',         13.0,  30.0),
-    # ('Gamma γ',        30.0,  45.0),
-    # ('μ + β',           8.0,  30.0),
-    # ('μ + β + γ',       8.0,  45.0),
+    ('EEG Completo',    0.5,  45.0),
+    ('Delta δ',         0.5,   4.0),
+    ('Theta θ',         4.0,   8.0),
+    ('Mu μ',            8.0,  13.0),
+    ('Beta β',         13.0,  30.0),
+    ('Gamma γ',        30.0,  45.0),
+    ('μ + β',           8.0,  30.0),
+    ('μ + β + γ',       8.0,  45.0),
     ('Preprocesamiento Coherencia',       5.0,  45.0),
 ]
 
@@ -59,19 +52,13 @@ COLOR_TITLE = '#ffffff'
 
 FREQS_NOTCH =   (60.0, 120.0)
 Q_NOTCH =       5.0
-
 WAVELET =       'db4'
 LEVEL =         6
-NIVELES_CERO =  [1, 6]     # D6 y D1
-REMOVE_APPROX = True       # A6
+NIVELES_CERO =  [1, 6] 
+REMOVE_APPROX = True   
 WAVE_MODE =     'reflect'
-
-IC_TO_REMOVE =  0          # IC0
+IC_TO_REMOVE =  0         
 BP_ORDER =      3          
-
-# ─────────────────────────────────────────────────────────────────────────────
-# PARASEO DE LAS FIGURAS
-# ─────────────────────────────────────────────────────────────────────────────
 
 CONDICION_MAP = {
     'OV': 'Ojos Abiertos - Movimiento Visual (OV)',
@@ -87,24 +74,17 @@ ESTADO_MAP = {
 }
 
 def parsear_nombre_archivo(ruta):
-    nombre = os.path.splitext(os.path.basename(ruta))[0]        # 'S17_260310_EEG_CK_3_RE'
-    partes = nombre.split('_')                                  # ['S17','260310','EEG','CK','3','RE']
-
-    sujeto    = partes[0]                                       # 'S17'
-    condicion = partes[3]                                       # 'CK'
-    estado    = partes[5]                                       # 'RE'
-
-    num_sujeto   = sujeto[1:]                                   # '17'
+    nombre = os.path.splitext(os.path.basename(ruta))[0]       
+    partes = nombre.split('_')                                
+    sujeto    = partes[0]                                      
+    condicion = partes[3]                                       
+    estado    = partes[5]                                     
+    num_sujeto   = sujeto[1:]                                  
     desc_cond    = CONDICION_MAP.get(condicion, condicion)
     desc_estado  = ESTADO_MAP.get(estado, estado)
-
     return f"Sujeto {num_sujeto}  |  {desc_cond}  |  {desc_estado}"
 
 PIE_FIGURA = parsear_nombre_archivo(RUTA_NPY)
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FUNCIONES
-# ─────────────────────────────────────────────────────────────────────────────
 
 def pantalla_completa(fig):
     try:
@@ -128,12 +108,6 @@ def pantalla_completa(fig):
 def calcular_psd(señal, fs, nperseg):
     freqs, psd = welch(señal, fs=fs, nperseg=nperseg)
     return freqs, psd
-
-# def nombre_salida(ruta, sufijo):
-#     CARPETA_IMGS = r"D:\luiso\Documentos\Luis\UPIITA\TT\CMC\IMGS"
-#     os.makedirs(CARPETA_IMGS, exist_ok=True)          # la crea si no existe
-#     nombre = os.path.splitext(os.path.basename(ruta))[0]
-#     return os.path.join(CARPETA_IMGS, f"{nombre}_{sufijo}.svg")
 
 def estilo_ax(ax):
     ax.set_facecolor(BG_AX)
@@ -161,86 +135,59 @@ def plot_figura(nombre_fig, datos_filt, f_low, f_high, tiempo, fs, nperseg, colo
     )
     fig.patch.set_facecolor(BG_FIG)
     fig.subplots_adjust(left=0.035, right=0.985, top=0.96, bottom=0.08)
-    
     fig.set_size_inches(19, 10.5) 
-
     fig.suptitle(
         f'{nombre_fig} — Butterworth ord. {BP_ORDER} | {f_low}–{f_high} Hz | fs = {fs} Hz', 
         color=COLOR_TITLE, fontsize=11, fontweight='bold'
     )
-    
     y_min_fig = datos_filt.min()
     y_max_fig = datos_filt.max()
     margen_fig = (y_max_fig - y_min_fig) * 0.08
-
     psd_max_global = 0.0
     psds = []
     for i in range(7):
         freqs, psd = calcular_psd(datos_filt[i], fs, nperseg)
         psds.append((freqs, psd))
         psd_max_global = max(psd_max_global, psd.max())
-
     fig.text(0.5, 0.01, pie, ha='center', va='bottom', fontsize=8, color= COLOR_LABEL, style='italic', fontweight='bold')
-
     for i in range(7):
         ax_t = axes[i, 0]
         ax_p = axes[i, 1]
         estilo_ax(ax_t); estilo_ax(ax_p)
-        
-        # Tiempo
         ax_t.plot(tiempo, datos_filt[i], color=colores[i], linewidth=0.8)
         ax_t.set_ylabel(canales[i], color=COLOR_LABEL, fontsize=8)
         ax_t.set_xlim(tiempo[0], tiempo[-1])
         ax_t.set_ylim(y_min_fig - margen_fig, y_max_fig + margen_fig)
-        
         if i == 6:
             ax_t.set_xlabel("Tiempo (s)", color=COLOR_LABEL, fontsize=8)
-        
         freqs, psd = psds[i]
         ax_p.plot(freqs, psd, color=colores[i], linewidth=0.9)
         ax_p.set_xlim(0, max(45, f_high) + 8)
         ax_p.set_ylim(0, psd_max_global * 1.15)
-        
         if i == 6:
             ax_p.set_xlabel("Frecuencia (Hz)", color=COLOR_LABEL, fontsize=8)
-    
-    # Ocultar tick labels en filas intermedias DESPUÉS de dibujar todo
-    for i in range(6):           # filas 0–5
+            
+    for i in range(6):      
         plt.setp(axes[i, 0].get_xticklabels(), visible=False)
         plt.setp(axes[i, 1].get_xticklabels(), visible=False)
     
-    # Asegurar que la fila 6 sí los muestre
     plt.setp(axes[6, 0].get_xticklabels(), visible=True, color=COLOR_TICK)
     plt.setp(axes[6, 1].get_xticklabels(), visible=True, color=COLOR_TICK)
 
     for i in range(7):
         ax_p = axes[i, 1]
         plot_bandas_psd(ax_p, psd_max_global, f_low, f_high, etiquetas=(i == 0))
-        
-    # === DESCOMENTAR PARA GUARDAR IMG EN RUTA
-    
-    # ruta_svg = nombre_salida(RUTA_EMG, "EMG")
-    # fig.savefig(ruta_svg, format='svg', bbox_inches='tight',
-    #             facecolor=fig.get_facecolor())
-    # print(f"\n  Figura guardada en: {ruta_svg}")
 
     pantalla_completa(fig)
     return fig
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PROCESAR SEÑALES
-# ─────────────────────────────────────────────────────────────────────────────
-
-# 1) Cargar
 datos = cargar_npy_eeg(RUTA_NPY, n_canales_esperados=len(CANALES))
+
 n_canales, n_muestras = datos.shape
 tiempo = np.arange(n_muestras) / FS
-
-# 2) Notch 60 y 120 Hz (Q=5)
 datos = aplicar_notch_multiple(datos, fs=FS, freqs=FREQS_NOTCH, Q=Q_NOTCH, pad=PAD_MUESTRAS)
 print(f"\n  [OK] Notch aplicado: {FREQS_NOTCH} Hz | Q={Q_NOTCH}")
 
-# 3) Wavelet db4 nivel 6, eliminar D1 D6 y A6
 datos = aplicar_wavelet_dwt_multicanal(
     datos,
     wavelet=WAVELET,
@@ -252,7 +199,6 @@ datos = aplicar_wavelet_dwt_multicanal(
 )
 print(f"  [OK] Wavelet aplicado: {WAVELET} | level={LEVEL} | cero={NIVELES_CERO} | remove A{LEVEL}={REMOVE_APPROX}")
 
-# 4) ICA solo si el sujeto es S5 (remover IC0)
 es_s5 = bool(re.search(r'(^|[\\/])S5([\\/]|_)', RUTA_NPY, flags=re.IGNORECASE))
 if es_s5:
     datos, _ica = ica_eliminar_componente(datos, fs=FS, ch_names=CANALES, ic_to_remove=IC_TO_REMOVE)
@@ -260,7 +206,6 @@ if es_s5:
 else:
     print("  [SKIP] ICA omitida (sujeto distinto de S5)")
 
-# 5) Pasa Banda y Plot
 for (nombre, f_low, f_high) in FIGURAS:
     print(f"\n  → Generando: {nombre} ({f_low}-{f_high} Hz)")
     datos_filt = aplicar_pasabanda_butter(

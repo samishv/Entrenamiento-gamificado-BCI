@@ -7,7 +7,6 @@ from mne.preprocessing import ICA
 from scipy.signal import iirnotch, sosfiltfilt, tf2sos, butter, resample_poly
 
 
-
 # %% CARGAR DATOS EEG
 
 def cargar_npy_eeg(ruta_npy: str, n_canales_esperados: int | None = None) -> np.ndarray:
@@ -36,12 +35,10 @@ def cargar_npy_emg(
     elif datos.ndim != 2:
         raise ValueError(f"Se esperaba 1D o 2D para EMG. Recibido: {datos.shape}")
 
-    # Si especificas canales esperados, usamos eso para decidir transposición
     if permitir_transponer and n_canales_esperados is not None:
         if datos.shape[0] != n_canales_esperados and datos.shape[1] == n_canales_esperados:
             datos = datos.T
 
-    # Si no especificas canales esperados, heurística: usualmente muestras >> canales
     if permitir_transponer and n_canales_esperados is None:
         if datos.shape[0] > datos.shape[1]:
             datos = datos.T
@@ -318,33 +315,8 @@ def rectificar_senal(senal, tipo='completa'):
 # %%  ENVOLVENTE
 
 def emg_envelope(x, fs=None, t=None, tc_ms=20.0, rectify="full"):
-    """
-    Calcula envolvente tipo: rectificación + 'integración' (promedio móvil).
-    Basado en zero_phase_rectify_integrate() de tus scripts.
-
-    Parámetros
-    ----------
-    x : array-like
-        Vector de señal EMG.
-    fs : float, opcional
-        Frecuencia de muestreo en Hz. (recomendado si la tienes)
-    t : array-like, opcional
-        Vector de tiempo en segundos (mismo largo que x). Se usa si fs es None.
-    tc_ms : float
-        "Constante de tiempo" en ms (realmente longitud de ventana del promedio móvil).
-    rectify : {"half","full",None}
-        - "half": media onda -> max(x,0)  (tal cual los scripts)
-        - "full": onda completa -> abs(x) (más común en EMG)
-        - None : sin rectificación
-
-    Retorna
-    -------
-    env : np.ndarray
-        Envolvente (misma longitud que x).
-    """
     x = np.asarray(x, dtype=float)
 
-    # --- determinar fs ---
     if fs is None:
         if t is None:
             raise ValueError("Debes proporcionar fs (Hz) o t (vector de tiempo en s).")
@@ -356,9 +328,8 @@ def emg_envelope(x, fs=None, t=None, tc_ms=20.0, rectify="full"):
             return x.copy()
         fs = 1.0 / dt
 
-    # --- rectificación ---
     if rectify == "half":
-        x_rect = np.maximum(x, 0.0)  # como en tus scripts
+        x_rect = np.maximum(x, 0.0)
     elif rectify == "full":
         x_rect = np.abs(x)
     elif rectify is None:
@@ -366,17 +337,15 @@ def emg_envelope(x, fs=None, t=None, tc_ms=20.0, rectify="full"):
     else:
         raise ValueError("rectify debe ser 'half', 'full' o None.")
 
-    # --- ventana en muestras ---
     window_samples = int((tc_ms / 1000.0) * float(fs))
     if window_samples < 3:
         return x_rect.copy()
 
-    # forzar impar (ventana simétrica) como en tus scripts
     if window_samples % 2 == 0:
         window_samples += 1
 
     kernel = np.ones(window_samples, dtype=float) / window_samples
-    env = np.convolve(x_rect, kernel, mode="same")  # centrado ("zero-phase" aproximado)
+    env = np.convolve(x_rect, kernel, mode="same")
     return env
 
 # %% LAPLACIANO

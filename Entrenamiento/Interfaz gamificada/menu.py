@@ -5,8 +5,6 @@ class Menu:
         self.game = game
         self.run_display = True
         self.state = None
-        
-        # ===== CONSTANTE DE DESPLAZAMIENTO VERTICAL (SIN ESTO NO CUADRAN LOS PX) =====
         self.offset_y = 5
 
     def draw_cursor(self, option_rect):
@@ -24,8 +22,6 @@ class Menu:
         self.game.reset_keys()
         self.game.clock.tick(60)
         
-        
-# ===== MENU PRINCIPAL =====
 class MainMenu(Menu):
     def __init__(self, game):
         super().__init__(game)
@@ -41,14 +37,12 @@ class MainMenu(Menu):
             self.game.display.blit(self.game.menu_bg, (0, 0))
             mid_w, _ = self.game.display.get_rect().center
 
-            # ===== TITULO DE MAIN MENU =====
             title = self.game.render_bitmap_text_surface(
                 "MAIN MENU", self.game.bitmap_font_white, spacing=self.game.bitmap_spacing
             )
             title_rect = title.get_rect(center=(mid_w, 50 + self.offset_y))
             self.game.display.blit(title, title_rect)
 
-            # ===== ALTURAS DE NIVELES Y CONFIG =====
             posiciones_y = [140, 170]
             rects = []
             for i, text in enumerate(self.options):
@@ -79,12 +73,10 @@ class MainMenu(Menu):
                 self.game.curr_menu = self.game.config_menu
                 self.run_display = False
 
-
-# ===== VENTANA MENU DE CONFIG =====
 class ConfigMenu(Menu):
     def __init__(self, game):
         super().__init__(game)
-        self.state = "Volver"          # cursor puede estar en "Volver" o "BT"
+        self.state = "Volver"          
         
         self.nickname_buffer = ""
         self.max_nickname_len = 20
@@ -99,7 +91,6 @@ class ConfigMenu(Menu):
         while self.run_display:
             self.game.check_events()
 
-            # ── Nickname input ──────────────────────────────
             if self.game.TEXT_INPUT:
                 self.nickname_buffer += self.game.TEXT_INPUT
             if self.game.BACKSPACE and len(self.nickname_buffer) > 0:
@@ -114,7 +105,6 @@ class ConfigMenu(Menu):
             self.game.display.blit(self.game.menu_bg, (0, 0))
             mid_w, _ = self.game.display.get_rect().center
 
-            # ── Título ──────────────────────────────────────
             title = self.game.render_bitmap_text_surface(
                 "CONFIGURACION", self.game.bitmap_font_white,
                 spacing=self.game.bitmap_spacing
@@ -123,7 +113,6 @@ class ConfigMenu(Menu):
                 title, title.get_rect(center=(mid_w, 50 + self.offset_y))
             )
 
-            # ── Nickname label ──────────────────────────────
             nick_label = self.game.render_bitmap_text_surface(
                 "Nickname", self.game.bitmap_font_white,
                 spacing=self.game.bitmap_spacing
@@ -133,7 +122,6 @@ class ConfigMenu(Menu):
                 nick_label.get_rect(center=(mid_w, 110 + self.offset_y))
             )
 
-            # ── Nickname typing + caret ─────────────────────
             typed_y   = 140 + self.offset_y
             base_text = self.nickname_buffer
 
@@ -160,11 +148,9 @@ class ConfigMenu(Menu):
                     caret_rect = caret_surf.get_rect(center=(mid_w, typed_y))
                 self.game.display.blit(caret_surf, caret_rect)
 
-            # ── Switch Bluetooth ────────────────────────────
             bt_y = 180 + self.offset_y
             self._draw_bt_switch(mid_w, bt_y)
 
-            # ── Volver ──────────────────────────────────────
             volver = self.game.render_bitmap_text_surface(
                 "Volver", self.game.bitmap_font_white,
                 spacing=self.game.bitmap_spacing
@@ -172,25 +158,17 @@ class ConfigMenu(Menu):
             volver_rect = volver.get_rect(center=(mid_w, 220 + self.offset_y))
             self.game.display.blit(volver, volver_rect)
             
-
-            # Cursor solo en "Volver" (el BT se activa con ENTER sobre él)
             if self.state == "Volver":
                 self.draw_cursor(volver_rect)
             if self.state == "BT":
-                self.draw_cursor(self._bt_rect.move(-90, 0))  # ajusta según el diseño
+                self.draw_cursor(self._bt_rect.move(-90, 0))
                   
             self.blit_screen()
 
         pygame.key.stop_text_input()
         pygame.key.set_repeat()
 
-    # ── Dibuja el switch ────────────────────────────────────
     def _draw_bt_switch(self, mid_w, y):
-        """
-        Dibuja:  Bluetooth  [OFF]   o   Bluetooth  [ON ]
-        El rectángulo cambia de color según el estado.
-        """
-        # Label izquierdo
         label = self.game.render_bitmap_text_surface(
             "ARIADNE", self.game.bitmap_font_white,
             spacing=self.game.bitmap_spacing
@@ -198,12 +176,11 @@ class ConfigMenu(Menu):
         label_rect = label.get_rect(midright=(mid_w +10, y))
         self.game.display.blit(label, label_rect)
 
-        # Caja del switch
         enabled = self.game.bluetooth_enabled
         box_color  = (0, 200, 80)  if enabled else (0, 0, 0)
         text_str   = "ON " if enabled else "OFF"
 
-        box_w, box_h = 36, 14          # ajusta a la escala de tu display
+        box_w, box_h = 36, 14      
         box_rect = pygame.Rect(0, 0, box_w, box_h)
         box_rect.midleft = (mid_w + 20, y)
         pygame.draw.rect(self.game.display, box_color, box_rect, border_radius=3)
@@ -217,19 +194,16 @@ class ConfigMenu(Menu):
             switch_text.get_rect(center=box_rect.center)
         )
 
-        # Guardamos el rect para check_input (detección de cursor opcional)
         self._bt_rect = box_rect
 
     def check_input(self):
         if self.game.DOWN_KEY:
-            # Alternar entre "BT" y "Volver"
             self.state = "Volver" if self.state == "BT" else "BT"
         if self.game.UP_KEY:
             self.state = "Volver" if self.state == "BT" else "BT"
 
         if self.game.START_KEY:
             if self.state == "BT":
-                # Toggle
                 self.game.bluetooth_enabled = not self.game.bluetooth_enabled
             elif self.state == "Volver":
                 self._save_and_return()
@@ -244,8 +218,6 @@ class ConfigMenu(Menu):
         self.game.curr_menu = self.game.main_menu
         self.run_display = False
 
-
-# ===== VENTANA NIVELES =====
 class LevelsMenu(Menu):
     def __init__(self, game):
         super().__init__(game)
@@ -261,14 +233,12 @@ class LevelsMenu(Menu):
             self.game.display.blit(self.game.menu_bg, (0, 0))
             mid_w, _ = self.game.display.get_rect().center
 
-            # ===== TITULO DE NIVELES =====
             title = self.game.render_bitmap_text_surface(
                 "NIVELES", self.game.bitmap_font_white, spacing=self.game.bitmap_spacing
             )
             title_rect = title.get_rect(center=(mid_w, 50 + self.offset_y))
             self.game.display.blit(title, title_rect)
 
-            # ===== ALTURAS PARA LVL 1, LVL 2 Y VOLVER =====
             posiciones_y = [110, 140, 200]
             option_rects = []
             for i, opt in enumerate(self.options):

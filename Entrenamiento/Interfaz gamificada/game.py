@@ -16,42 +16,30 @@ class Game:
         pygame.display.set_caption("juego v1_v12")
 
         self.base_size = (480, 270)
-        self.display = pygame.Surface(self.base_size)
-        
+        self.display = pygame.Surface(self.base_size)       
         self.window_size = (1280, 720)
         self.fullscreen = False
         self.screen = pygame.display.set_mode(self.window_size)
-        
-        # ===== FONDO DEL MENÚ =====
         menu_bg_path = os.path.join("data", "images", "background", "menu_b", "1.png")
         self.menu_bg = pygame.image.load(menu_bg_path).convert_alpha()
         self.menu_bg = pygame.transform.scale(self.menu_bg, self.base_size)
-
         self.blit_size = self.base_size
         self.blit_offset = (0, 0)
         self._recalc_scaling()
-
         self.clock = pygame.time.Clock()
-
-        # === ASUNTOS DEL MENU ===
         self.main_menu = MainMenu(self)
         self.config_menu = ConfigMenu(self)
         self.levels_menu = LevelsMenu(self)
-
         self.curr_menu = self.main_menu
-
         self.selected_level = 1  
-
         self.DOWN_KEY = False
         self.UP_KEY = False
         self.START_KEY = False
         self.BACK_KEY  = False
         
-        # ===== INPUT DE TEXTO (MENÚ CONFIG) =====
         self.TEXT_INPUT = ""
         self.BACKSPACE = False
         
-        # ===== PARALLAX BACKGROUND CONSTANTES =====
         self.bg_speeds = [0.25, 0.50, 0.85]
         self.bg_base_speed = 20.0
         self.bg_speed_current = 0.0
@@ -59,7 +47,6 @@ class Game:
         self.bg_decel = 14.0
         self.prev_scroll_x = 0.0
         
-        # ===== PLAYER ASSETS =====
         self.assets = {
             "ice": load_images("tiles/ice"),
             "water": load_images("tiles/water"),
@@ -76,94 +63,75 @@ class Game:
             "player/damage": Animation(load_images("entities/player/damage"), img_dur=5),
         }
         
-        # ===== APLICAR TEMA 1 =====
         self.apply_level_theme(1)
         
-        # ===== REESCALAR CORAZONES =====
         self.heart_small = []
         for img in self.assets["heart"]:
             w, h = img.get_size()
             scaled_img = pygame.transform.scale(img, (w // 2, h // 2))
             self.heart_small.append(scaled_img)
 
-        # ===== MUNDO =====
         self.tilemap = Tilemap(self, tile_size=16)
         self.tilemap.load("map.json")
-
         self.player = Player(self, (0, 170), (32, 48))
         self.scroll = [0, 0]
         self.fixed_scroll_y = None
         self.tile_size = 16
 
-        # ===== VARIABLES MODIFICABLES (AUTORUN / TIEMPO PARA PULSAR) =====
         self.auto_speed = 2
         self.fail_return_speed = 1.2
         self.time_limit = 20
-        
         self.level_time_limits = {
-            1: 10,  # Nivel 1
-            2: 5,  # Nivel 2
+            1: 20,  
+            2: 15, 
         }
         
-        # ===== VIDAS =====
         self.max_lives = 3
         self.lives = 3
         
-        # ===== GAMER TAG =====
         self.gamer_tag = ""
         
-        # ===== CONFIGURACIÓN DE NIVEL (5 CHALLENGES) =====
         self.first_stop = 38
         self.challenge_spacing = 60
         self.total_challenges = 5
-        
         self.stop_tiles = [self.first_stop + i * self.challenge_spacing for i in range(self.total_challenges)]
         self.stop_index = 0
         self.stop_x_px = self.stop_tiles[self.stop_index] * self.tile_size
-        
         self.challenge_stop_indices = set(range(self.total_challenges))
         self.active_challenge = True
         
-        # # ===== POSICIÓN DEL GLOBO EN EL MUNDO =====
+
         self.balloon_tile_x = 45
         self.balloon_world_x = self.balloon_tile_x * self.tilemap.tile_size
         self.balloon_world_y = 32   
         self.balloon_visible = True    
-        
         self.balloon_is_popping = False
         self.balloon_pop_frame = 0
         self.balloon_pop_timer = 0.0
         self.balloon_pop_frame_duration = 0.1
         
-        # # ===== POSICIÓN DEL BLOQUE FLOTANTE EN EL MUNDO =====
         self.bridge_w_tiles = 10
         self.bridge_h_tiles = 3
-        
         self.bridge_tile_x0 = int(self.balloon_tile_x) - (self.bridge_w_tiles // 2)
         self.bridge_world_x = self.bridge_tile_x0 * self.tilemap.tile_size
         self.bridge_world_y = self.balloon_world_y + 32
-        
         self.bridge_visible = True
         self.bridge_state = "FLOATING" 
         self.bridge_vel_y = 0.0
         self.bridge_gravity = 400.0
         self.bridge_target_top_tile_y = None
         self.bridge_done = False
-        
         self.BRIDGE_VARIANTS = [
             [0, 1, 1, 1, 1, 1, 1, 1, 1, 2],
             [7, 8, 8, 8, 8, 8, 8, 8, 8, 3],
             [6, 5, 5, 5, 5, 5, 5, 5, 5, 4],
         ]
         
-        # ===== CHALLENGES =====
         self.hand_offset_tiles_y = 8.5
         self.challenges = []
-        
         for stop_tile in self.stop_tiles:
             balloon_tile_x = stop_tile + 7
             bridge_tile_x0 = balloon_tile_x - (self.bridge_w_tiles // 2)
-        
             self.challenges.append({
                 "balloon_tile_x": balloon_tile_x,
                 "balloon_world_y": 32,
@@ -184,7 +152,6 @@ class Game:
                 "bridge_done": False,
             })
 
-        # ===== ESTADOS DEL JUEGO =====
         RUNNING = 0
         WAITING = 1
         RESOLVED = 2
@@ -198,92 +165,73 @@ class Game:
         self.FAILED = FAILED
         self.GAME_OVER = GAME_OVER
         self.WIN = WIN
-        
         self.state = self.RUNNING
         
-        # ===== PULSAR PARA REVENTAR GLOBO =====
         self.max_presses = 3
         self.time_left = self.time_limit
         self.last_time = pygame.time.get_ticks()
         self.anim_last_time = pygame.time.get_ticks()
-        
         self.clock_frames = self.assets["clock"]
         self.hand_frames = self.assets["hand"]
         self.hand_frame_idx = 0
         self.hand_timer = 0.0
         self.hand_frame_duration = 0.10
         self.hand_active = False
-        
         self.score = 0
         self.max_score_per_challenge = 1000
 
-        # ===== BLE =====
         self.DEVICE_NAME      = "ESP32-DRV2605"
         self.CHAR_WRITE_UUID  = "abcd1234-ab12-cd34-ef56-abcdef123456"
         self.CHAR_NOTIFY_UUID = "abcd1234-ab12-cd34-ef56-abcdef123457"
-
         self.INTENSIDAD_ARIADNE = 150
         self.DELAY_ARIADNE      = 200
-
-        self.bluetooth_enabled = False   # el menú lo togglea
-        self.ble_client  = None          # BleakClient activo
-        self.ble_loop    = None          # loop asyncio del hilo BLE
+        self.bluetooth_enabled = False  
+        self.ble_client  = None         
+        self.ble_loop    = None          
         self.ble_thread  = None
         
-        # ===== FADES (HUD / END / MENSAJES) =====
         self.fade_hearts_in_duration = 0.5
         self.fade_hearts_out_duration = 0.25
-        
         self.fade_end_title_duration = 1.0   
         self.fade_msg_duration = 0.5
-        
         self.hearts_alpha = 0
         self.hearts_fading_in = True
         self.hearts_fading_out = False
-        
         self.end_title_alpha = 0
         self.end_title_fade_in = False
         self.prev_show_end = False
-        
         self.msg_alpha = 0
         self.msg_state = "HIDDEN"
         self.msg_interval_index = 0
         self.msg_intervals = [(10, 20), (62, 80), (122, 140), (182, 200), (242, 260)]
         
-        # ===== RECUPERACIÓN TRAS FALLAR =====
         self.auto_speed_normal = self.auto_speed
         self.fail_return_active = False
-        
         self.recovering = False
         self.escape_started = False
         self.escape_end_offset = 11
         self.escape_tile_N = 49
-        
         self.escape_jump_tiles = 6
         self.escape_target_y = None
         self.pending_life_loss = False
         self.go_phase = "NONE"    
         self.go_walk_end_x = None
         
-        # ===== BITMAP FONT =====
         self.bitmap_charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$¤+-*=%”’#@&_(),.;:?|{}<>[]§^~© "
         self.bitmap_font = self.load_numbered_bitmap_font("data/fonts", self.bitmap_charset, start_index=1)
         self.bitmap_spacing = 1
         self.bitmap_font_white = self.recolor_bitmap_font(self.bitmap_font, (255, 255, 255))
         
-        # ===== VALIDAR GAMER TAG =====
         self.gamer_tag_alpha = 0
         allowed = set(self.bitmap_charset)
         self.gamer_tag = "".join(ch for ch in self.gamer_tag if ch in allowed)
         
-        # ===== BITMAP FONT ESCALADO GRANDE MID Y GAMER TAG =====
         self.bitmap_scale_big = 5
         self.bitmap_spacing_big = self.bitmap_spacing * self.bitmap_scale_big
         self.bitmap_scale_mid = 2.3
         self.bitmap_spacing_mid = self.bitmap_spacing * self.bitmap_scale_mid
         self.bitmap_scale_chibi = 0.8
         self.bitmap_spacing_chibi = self.bitmap_spacing * self.bitmap_scale_chibi
-        
         self.bitmap_font_big = {}
         self.bitmap_font_mid = {}
         self.bitmap_font_chibi = {}
@@ -295,16 +243,12 @@ class Game:
             self.bitmap_font_big[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_big, h * self.bitmap_scale_big))
             self.bitmap_font_mid[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_mid, h * self.bitmap_scale_mid))
             self.bitmap_font_chibi[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_chibi, h * self.bitmap_scale_chibi))
-
         for ch, img in self.bitmap_font_white.items():
             w, h = img.get_size()
             self.bitmap_font_big_white[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_big, h * self.bitmap_scale_big))
             self.bitmap_font_mid_white[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_mid, h * self.bitmap_scale_mid))
             self.bitmap_font_chibi_white[ch] = pygame.transform.scale(img, (w * self.bitmap_scale_chibi, h * self.bitmap_scale_chibi))
 
-
-
-    # Llamar justo antes de iniciar niveles para preparar BLE si está habilitado en el menú de configuración. 
     def start_ble_if_needed(self):
         if self.bluetooth_enabled and self.ble_client is None:
             self.ble_thread = threading.Thread(
@@ -312,11 +256,11 @@ class Game:
             )
             self.ble_thread.start()
         if not self.bluetooth_enabled:
-            self.stop_ble()  # si se deshabilitó, aseguramos detener cualquier conexión activa
+            self.stop_ble()
 
     def stop_ble(self):
         """Llamar al salir del nivel o al togglear OFF desde el menú."""
-        self.ble_client = None          # la corutina detecta esto y sale
+        self.ble_client = None         
 
     def send_vibration(self, intensity: int, delay_ms: int):
         """Usar esto desde cualquier parte del juego."""
@@ -328,7 +272,6 @@ class Game:
             self.ble_loop
         )
 
-    # ── Internos ────────────────────────────────────────────
     def _ble_thread_runner(self):
         self.ble_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.ble_loop)
@@ -581,30 +524,23 @@ class Game:
     
     def reset_level(self, level_id: int):
         self.apply_level_theme(level_id)
-    
         self.time_limit = self.level_time_limits.get(level_id, 2)
         self.time_left = self.time_limit
-    
         self.tilemap = Tilemap(self, tile_size=16)
         self.tilemap.load("map.json")
         self.tile_size = self.tilemap.tile_size
-    
         self.player = Player(self, (0, 170), (32, 48))
         self.scroll = [0, 0]
         self.fixed_scroll_y = None
-    
         self.auto_speed = 2
         self.auto_speed_normal = self.auto_speed
         self.fail_return_speed = 1.2
         self.fail_return_active = False
-    
         now = pygame.time.get_ticks()
         self.last_time = now
         self.anim_last_time = now
-    
         self.lives = self.max_lives
         self.score = 0
-    
         self.first_stop = 38
         self.challenge_spacing = 60
         self.total_challenges = 5
@@ -613,36 +549,29 @@ class Game:
         self.stop_x_px = self.stop_tiles[self.stop_index] * self.tile_size
         self.challenge_stop_indices = set(range(self.total_challenges))
         self.active_challenge = True
-    
         self.state = self.RUNNING
-    
         self.max_presses = 3
         self.hand_frames = self.assets["hand"]
         self.hand_frame_idx = 0
         self.hand_timer = 0.0
         self.hand_active = False
-    
         self.hearts_alpha = 0
         self.hearts_fading_in = True
         self.hearts_fading_out = False
         self.end_title_alpha = 0
         self.end_title_fade_in = False
         self.prev_show_end = False
-    
         self.msg_alpha = 0
         self.msg_state = "HIDDEN"
         self.msg_interval_index = 0
-    
         self.recovering = False
         self.escape_started = False
         self.escape_target_y = None
         self.pending_life_loss = False
         self.go_phase = "NONE"
         self.go_walk_end_x = None
-    
         self.bg_offsets = [0.0, 0.0, 0.0]
         self.bg_speed_current = 0.0
-    
         self.challenges = []
         for stop_tile in self.stop_tiles:
             balloon_tile_x = stop_tile + 7
@@ -669,7 +598,6 @@ class Game:
     
     def run(self):
         self.start_ble_if_needed()
-        # === ROUTER DE NIVELES ===
         if self.selected_level == 1:
             self.run_level_1()
         elif self.selected_level == 2:
@@ -682,19 +610,16 @@ class Game:
             now_anim = pygame.time.get_ticks()
             frame_dt = (now_anim - self.anim_last_time) / 1000.0
             self.anim_last_time = now_anim
-    
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
                     self.playing = False
                     return
-    
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_F11:
                         self._toggle_fullscreen()
                     if event.key == pygame.K_ESCAPE:
                         self.playing = False
-    
                     if event.key == pygame.K_SPACE and self.state == self.WAITING and self.active_challenge:
                         self.send_vibration(self.INTENSIDAD_ARIADNE, self.DELAY_ARIADNE)
                         cur = self.current_challenge()
@@ -715,23 +640,19 @@ class Game:
                             cur["bridge_vel_y"] = 0.0
                             cur["bridge_target_top_tile_y"] = self._find_water_top_y_for_bridge(cur["bridge_tile_x0"])
                             
-            # ===== CAMARA QUE SIGUE =====
             if self.fixed_scroll_y is None:
                 self.fixed_scroll_y = self.scroll[1]
                 
             anchor_x = 0.23
             anchor_y = 0.71
-            
             target_scroll_x = self.player.rect().centerx - self.display.get_width() * anchor_x
             self.scroll[0] += (target_scroll_x - self.scroll[0]) / 30
 
             if self.fixed_scroll_y is None:
                 self.fixed_scroll_y = self.player.rect().centery - self.display.get_height() * anchor_y
             self.scroll[1] = self.fixed_scroll_y
-            
-            # ===== PARALLAX SINCRONIZADO A LA CAMARA =====
+    
             self.prev_scroll_x = self.scroll[0]
-            
             show_end = (self.state == self.WIN) or (self.state == self.GAME_OVER and self.go_phase == "STOP")
             parallax_active = (not show_end) and (
                 (self.state in (self.RUNNING, self.FAILED)) or
@@ -750,11 +671,9 @@ class Game:
             
             render_scroll = (int(self.scroll[0]), int(self.scroll[1]))
             
-            # ===== RENDER PLAYER Y TILEMAP =====
             self.player.render(self.display, offset=render_scroll)
             self.tilemap.render(self.display, offset=render_scroll)
             
-            # ===== RENDER BLOQUES (TODOS) =====
             ts = self.tilemap.tile_size
             for ch in self.challenges:
                 if ch["bridge_visible"] and ch["bridge_state"] in ("FLOATING", "FALLING", "STUCK"):
@@ -766,7 +685,6 @@ class Game:
                             ice_img = self.assets["ice"][variant]
                             self.display.blit(ice_img, (wx - render_scroll[0], wy - render_scroll[1]))
                             
-            # ===== ANIMACION DE ザ・ハンド =====
             if self.state == self.WAITING and self.hand_active and self.active_challenge:
                 self.hand_timer += frame_dt
                 while self.hand_timer >= self.hand_frame_duration:
@@ -785,13 +703,11 @@ class Game:
             
                     self.display.blit(hand_img, (hand_screen_x, hand_screen_y))
             
-            # ===== POSICIÓN DEL GLOBO =====
             balloon_world_x = self.balloon_tile_x * self.tilemap.tile_size
             balloon_world_y = self.balloon_world_y
             balloon_screen_x = balloon_world_x - render_scroll[0]
             balloon_screen_y = balloon_world_y - render_scroll[1]
 
-            # ===== MOVIMIENTO Y ESTADOS DEL PLAYER =====
             move_x = self.auto_speed
 
             if self.state == self.RUNNING:
@@ -808,7 +724,6 @@ class Game:
                         if cur:
                             cur["press_count"] = 0
                     
-                            # ===== ACTIVAR ザ・ハンド EN WAITING =====
                             self.hand_active = True
                             self.hand_timer = 0.0
                             self.hand_frame_idx = 0
@@ -816,8 +731,7 @@ class Game:
                         self.state = self.WAITING
                         self.time_left = self.time_limit
                         self.last_time = pygame.time.get_ticks()
-            
-            # ===== CONDICIONES DE ESTADOS =====    
+              
             if self.state == self.WAITING:
                 move_x = 0
             
@@ -837,7 +751,6 @@ class Game:
             if self.state == self.WIN:
                 move_x = 0
                 
-            # ===== METRO SALTO DEL AGUA =====
             if (self.state in (self.FAILED, self.GAME_OVER)) and self.recovering and not self.escape_started:
                 top_right_x = self.player.pos[0] + self.player.size[0]
                 if top_right_x >= self.escape_x_px:
@@ -852,7 +765,6 @@ class Game:
 
             self.player.update(self.tilemap, (move_x, 0))
             
-            # ===== BLOQUE OTAKU (TOCA AGUA LE HACE DAÑO) =====
             if self.pending_life_loss:
                 if self._rect_touches_tile_type(self.player.rect(), "water"):
                     self.pending_life_loss = False
@@ -862,7 +774,6 @@ class Game:
                         self.state = self.GAME_OVER
                         self.go_phase = "NONE"
             
-            # ===== ASEGURAR SALTO =====
             if (self.state in (self.FAILED, self.GAME_OVER)) and self.recovering and self.escape_started and (self.escape_target_y is not None):
                 if self.player.pos[1] <= self.escape_target_y:
                     self.player.pos[1] = self.escape_target_y
@@ -882,13 +793,11 @@ class Game:
                         self.auto_speed = self.auto_speed_normal
                         self.fail_return_active = False
                         
-            # ===== SECUENCIA GAME OVER =====
             if self.state == self.GAME_OVER and self.go_phase == "WALK2":
                 if self.player.pos[0] >= self.go_walk_end_x:
                     self.go_phase = "STOP"
                     self.auto_speed = 0
             
-            # ===== ESPERANDING TECLA ESPACIO =====
             if self.state == self.WAITING:
                 now = pygame.time.get_ticks()
                 dt = (now - self.last_time) / 1000.0
@@ -920,7 +829,6 @@ class Game:
 
                     self.advance_stop()
                     
-            # ===== UPDATE DE LA ANIMACION POP (TODOS LOS CHALLENGES) =====
             for ch in self.challenges:
                 if ch["balloon_is_popping"] and ch["balloon_visible"]:
                     ch["balloon_pop_timer"] += frame_dt
@@ -932,7 +840,6 @@ class Game:
                             ch["balloon_visible"] = False
                             break
                     
-            # ===== BLOQUE DE HIELO CAYENDO (TODOS LOS CHALLENGES) =====
             for ch in self.challenges:
                 if ch["bridge_visible"] and ch["bridge_state"] == "FALLING":
             
@@ -968,7 +875,6 @@ class Game:
                             self.advance_stop()
                             self.hand_active = False
                     
-            # ===== RENDER GLOBOS (TODOS) =====
             for ch in self.challenges:
                 if not ch["balloon_visible"]:
                     continue
@@ -993,17 +899,14 @@ class Game:
                         (int(balloon_screen_x - img.get_width() // 2),
                          int(balloon_screen_y - img.get_height() // 2)))
                     
-            # ===== WIN =====
             if self.state not in (self.GAME_OVER, self.WIN):
                 if self.stop_index >= self.total_challenges and self.lives > 0:
                     if self.player.pos[0] + self.player.size[0] >= 308 * self.tile_size:
                         self.state = self.WIN
                         self.auto_speed = 0
                         
-            # ===== SHOW END =====
             show_end = (self.state == self.WIN) or (self.state == self.GAME_OVER and self.go_phase == "STOP")
             
-            # ===== DETECCION PARA FADES =====
             if show_end and not self.prev_show_end:
                 self.hearts_fading_out = True
                 self.hearts_fading_in = False
@@ -1013,7 +916,6 @@ class Game:
             
             self.prev_show_end = show_end
             
-            # ===== ACTUALIZAR FADE CORAZONES =====
             if self.hearts_fading_in:
                 self.hearts_alpha = self._approach_alpha(self.hearts_alpha, 255, self.fade_hearts_in_duration, frame_dt)
                 if self.hearts_alpha >= 255:
@@ -1024,13 +926,11 @@ class Game:
                 if self.hearts_alpha <= 0:
                     self.hearts_fading_out = False
             
-            # ===== ACTUALIZAR FADE TITULOS =====
             if self.end_title_fade_in:
                 self.end_title_alpha = self._approach_alpha(self.end_title_alpha, 255, self.fade_end_title_duration, frame_dt)
                 if self.end_title_alpha >= 255:
                     self.end_title_fade_in = False
             
-            # ===== ACTUALIZAR MENSAJES PROGRESO =====
             player_right_tile = int((self.player.pos[0] + self.player.size[0]) // self.tile_size)
             
             if (self.state == self.RUNNING) and (not show_end) and (self.msg_interval_index < len(self.msg_intervals)):
@@ -1057,7 +957,6 @@ class Game:
                 self.msg_state = "HIDDEN"
                 self.msg_alpha = 0
                        
-            # ===== HUD GAMER TAG =====
             tag_height = 0
             if (self.hearts_alpha > 0) and ((not show_end) or self.hearts_fading_out):
                 tag_surf = self.render_bitmap_text_surface(
@@ -1071,7 +970,6 @@ class Game:
                 self.display.blit(tag_surf, (tx, ty))
                 tag_height = tag_surf.get_height()
                 
-            # ===== HUD CLOCK =====
             if self.state == self.WAITING:
                 progress = (self.time_limit - self.time_left) / self.time_limit
                 progress = max(0.0, min(progress, 0.9999))
@@ -1085,7 +983,6 @@ class Game:
                 
                 self.display.blit(clock_img, (cx, cy))
                 
-            # ===== HUD VIDAS =====
             if (self.hearts_alpha > 0) and ((not show_end) or self.hearts_fading_out):
                 heart_idx = self.max_lives - self.lives
                 heart_idx = max(0, min(heart_idx, 3))
@@ -1098,7 +995,6 @@ class Game:
                 hy = margin
                 self.display.blit(heart_img, (hx, hy))
                 
-            # ===== MENSAJES DE PROGRESO =====
             if (self.state == self.RUNNING) and (self.msg_alpha > 0) and (not show_end):
                 remaining = max(0, self.total_challenges - self.stop_index)
                 
@@ -1133,13 +1029,11 @@ class Game:
                 self.display.blit(s2_label, (x_label, y2))
                 self.display.blit(s2_val,   (x2_val, y2))
             
-            # ===== PANTALLA FINAL (WIN / GAME OVER) VERSION MINECRAFT =====
             show_end = (self.state == self.WIN) or (self.state == self.GAME_OVER and self.go_phase == "STOP")
             
             if show_end:
                 completed = sum(1 for ch in self.challenges if ch.get("scored", False))
             
-                # Textos normales (1x)
                 end_alpha = int(self.end_title_alpha)
                 
                 s_gr = self.render_bitmap_text_surface("GLOBOS ROTOS", self.bitmap_font, spacing=self.bitmap_spacing)
@@ -1159,7 +1053,6 @@ class Game:
                 self.display.blit(s_pts, (11*16, 12*16))
                 self.display.blit(s_score, (25*16, 12*16))
             
-                # Títulos grandes (5x)
                 if self.state == self.GAME_OVER and self.go_phase == "STOP":
                     t1 = self.render_bitmap_text_surface("GAME", self.bitmap_font_big, spacing=self.bitmap_spacing_big)
                     t2 = self.render_bitmap_text_surface("OVER", self.bitmap_font_big, spacing=self.bitmap_spacing_big)
@@ -1176,8 +1069,6 @@ class Game:
                     self.display.blit(t1, (11*16, 1*16))
                     self.display.blit(t2, (11*16, 6*16))
                 
-                            
-            # ===== ACTUALIZAR PANTALLA Y RELOJ FPS ===== 
             self.screen.fill((0, 0, 0))
             scaled = pygame.transform.scale(self.display, self.blit_size)
             self.screen.blit(scaled, self.blit_offset)
@@ -1228,9 +1119,6 @@ class Game:
     
                 elif event.key in (pygame.K_BACKSPACE, pygame.K_DELETE):
                     self.BACKSPACE = True
-
-
-# ===== EJECUTABLE =====
 
 if __name__ == "__main__":
     Game().run()
