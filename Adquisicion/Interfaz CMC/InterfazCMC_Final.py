@@ -22,13 +22,13 @@ import csv, os
 from datetime import datetime
 from pathlib import Path
 
-# ─── EEG ──────────────────────────────────────────────────────────────────────
+# EEG
 EEG_STREAM_NAME = 'streamTEST'   # debe tener el mismo que en unicorn lsl
 EEG_SAVE_PATH   = 'registrosCMC'  # ruta donde eeg_window.py guardará los datos
 EEG_FLAG_PATH   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                'eeg_grabar.flag')
 
-# ─── Conexión serial ──────────────────────────────────────────────────────────
+# Conexión serial 
 SERIAL_PORT = 'COM7'
 SERIAL_BAUD = 115200
 CMD_START   = b'S\n'   # letra que Arduino espera para comenzar a enviar
@@ -48,11 +48,11 @@ except serial.SerialException as e:
     
     
 
-# ─── Paleta ──────────────────────────────────────────────────────────────────
+# Paleta 
 BG_MENU        = "#0D1B2A"
 BG_LIGHT       = "#121B24"
 CARD_WHITE     = "#162840"
-GREEN_MAIN     = "#00C4A0"  # turquesa — acción
+GREEN_MAIN     = "#00C4A0"  
 GREEN_LIGHT    = "#0B2B3B"
 GREEN_ZONE     = "#124453"
 NAVY           = "#080F1A"
@@ -60,15 +60,15 @@ TEXT_MUTED     = "#6A9AB0"
 TEXT_MUTEDPLUS = "#3A5A70"
 PROG_BG        = "#0E2035"
 ZONE_BORDER    = "#00C4A0"
-WARN_RED       = "#FF6B6B"  # coral — alerta
-TEAL           = "#38BDF8"  # azul cielo — config
-ORANGE         = "#FBBF24"  # ámbar — orden sesión
+WARN_RED       = "#FF6B6B"  
+TEAL           = "#38BDF8"  
+ORANGE         = "#FBBF24"  
 GREEN          = "#00C4A0"
 RED_DOT        = "#FF6B6B"
 GRAY_TEXT      = "#DEE0E3"
 DARK_TEXT      = "#FCFEFF"
 
-# ─── Tipografías ─────────────────────────────────────────────────────────────
+# Tipografías 
 F_TITLE = ("Georgia",   42, "bold")
 F_HEAD  = ("Helvetica", 22, "bold")
 F_LABEL = ("Helvetica", 16)
@@ -80,11 +80,11 @@ F_SECTION  = ("Helvetica", 12, "bold")
 F_ORDER_N  = ("Helvetica", 20, "bold")
 F_ORDER_T  = ("Helvetica", 13)
 
-CALIB_DURATION   = 10   # segundos de calibración
-REGISTRO_DURATION = 21  # segundos de registro (28 efectivos + 3 de preparación + 3 de descanso)
+CALIB_DURATION   = 10   
+REGISTRO_DURATION = 21  # segundos de registro (15 efectivos + 3 de preparación + 3 de descanso)
 
 
-# ─── Helpers ─────────────────────────────────────────────────────────────────
+
 def rrect(canvas, x1, y1, x2, y2, r=14, **kw):
     pts = [x1+r, y1, x2-r, y1, x2, y1, x2, y1+r,
            x2, y2-r, x2, y2, x2-r, y2, x1+r, y2,
@@ -92,17 +92,12 @@ def rrect(canvas, x1, y1, x2, y2, r=14, **kw):
     canvas.create_polygon(pts, smooth=True, **kw)
 
 
-# 
+ 
 def draw_graph(canvas, history,
                pad_l=70, pad_r=24, pad_t=20, pad_b=40,
                y_max=100, y_ticks=None,
                zone_lo=None, zone_hi=None, show_zone=False):
-    """
-    Dibuja la gráfica de señal en el canvas dado.
-    - y_max   : valor máximo del eje Y (Newtons o %)
-    - y_ticks : lista de marcas del eje Y; si es None se generan automáticamente
-    - show_zone / zone_lo / zone_hi : zona objetivo sombreada
-    """
+    
     canvas.delete("all")
     w = canvas.winfo_width()
     h = canvas.winfo_height()
@@ -115,10 +110,10 @@ def draw_graph(canvas, history,
     def gy(val):
         return pad_t + gh - (val / y_max * gh)
  
-    # Marcas del eje Y — automáticas o manuales
+    # Marcas del eje Y automáticas o manuales
     ticks = y_ticks or [int(y_max * i / 5) for i in range(6)]
  
-    # Zona objetivo (fondo sombreado)
+    # Zona objetivo 
     if show_zone and zone_lo is not None and zone_hi is not None:
         y_hi = gy(zone_hi)
         y_lo = gy(zone_lo)
@@ -139,7 +134,7 @@ def draw_graph(canvas, history,
         canvas.create_text(pad_l - 8, y, text=str(val),
                            anchor="e", font=F_SMALL, fill=TEXT_MUTED)
  
-    # Señal — el punto actual siempre en el centro
+    # Punto actual siempre en el centro
     MITAD = 75                        # puntos visibles a la izquierda del centro
     data  = history[-MITAD:]          # hasta MITAD puntos pasados
     if len(data) < 2:
@@ -155,14 +150,13 @@ def draw_graph(canvas, history,
     canvas.create_line([c for p in pts for c in p],
                        fill=GREEN_MAIN, width=3, smooth=True)
  
-    # Punto actual — siempre centrado
+    # Punto actual 
     cx, cy = pts[-1]
     canvas.create_oval(cx - 8, cy - 8, cx + 8, cy + 8,
                        fill=GREEN_MAIN, outline="#BAD8DF", width=3)
 
 
 def draw_timer_bar(canvas, timer_lbl, elapsed_ms, total_ms, label_fmt="{s} / {t} s"):
-    """Dibuja la barra de progreso de tiempo y actualiza la etiqueta."""
     canvas.delete("all")
     w = canvas.winfo_width()
     if w < 10:
@@ -178,7 +172,6 @@ def draw_timer_bar(canvas, timer_lbl, elapsed_ms, total_ms, label_fmt="{s} / {t}
         rrect(canvas, 0, 4, fill_w, 36, r=12, fill=color, outline="")
         
 def make_card(parent, border_color, width=100, height=380):
-    """Frame con borde de color simulado usando un Frame exterior."""
     outer = tk.Frame(parent, bg=border_color, padx=3, pady=3)
     inner = tk.Frame(outer, bg=BG_LIGHT)
     inner.pack(fill="both", expand=True)
@@ -217,7 +210,7 @@ class CoherenciaBCI(tk.Tk):
         # _tick() la consume con get_nowait() sin bloquear la interfaz.
         self.serial_queue = queue.Queue()
 
-        # Hilo lector — solo arranca si el puerto está disponible
+        # Hilo lector que solo arranca si el puerto está disponible
         if SERIAL_OK:
             t = threading.Thread(target=self._serial_reader, daemon=True)
             t.start()
@@ -233,14 +226,13 @@ class CoherenciaBCI(tk.Tk):
 
         self.show_frame("MenuPage")
 
-        # ─── EEG ──────────────────────────────────────────────────────────────
+        # EEG 
         self._eeg_proceso  = None  # subproceso de la ventana EEG
         self.participante_id = "X"  # se actualiza al salir de ConfiguracionPage
         self.sesion_id       = "X"  # se actualiza al salir de ConfiguracionPage
 
     def abrir_ventana_eeg(self, condicion="EEG", save_path=None):
-        """Lanza la ventana EEG como subproceso (solo visualiza, sin guardar)."""
-        
+                
         if self._eeg_proceso:
             print(f"[EEG] poll={self._eeg_proceso.poll()}")
         if self._eeg_proceso and self._eeg_proceso.poll() is None:
@@ -262,11 +254,9 @@ class CoherenciaBCI(tk.Tk):
         self._eeg_proceso = subprocess.Popen(
             [sys.executable, script,
             EEG_STREAM_NAME, path, condicion, pid, idx, sid],
-            # sin creationflags — hereda la consola de la interfaz principal
         )
 
     def iniciar_grabacion_eeg(self, condicion="EEG"):
-        """Crea el flag con la condición → eeg_window.py empieza a guardar."""
         try:
             with open(EEG_FLAG_PATH, 'w') as f:
                 f.write(f"{condicion},{self.participante_id},{self.indice_actual},{self.sesion_id}")
@@ -276,7 +266,6 @@ class CoherenciaBCI(tk.Tk):
             print(f"[EEG] Error creando flag: {e}")
 
     def detener_grabacion_eeg(self):
-        """Borra el flag → eeg_window.py para de guardar."""
         try:
             if os.path.exists(EEG_FLAG_PATH):
                 os.remove(EEG_FLAG_PATH)
@@ -286,7 +275,6 @@ class CoherenciaBCI(tk.Tk):
             print(f"[EEG] Error borrando flag: {e}")
 
     def cerrar_ventana_eeg(self):
-        """Borra el flag y termina el subproceso."""
         self.detener_grabacion_eeg()
         if self._eeg_proceso and self._eeg_proceso.poll() is None:
             self._eeg_proceso.terminate()
@@ -298,18 +286,13 @@ class CoherenciaBCI(tk.Tk):
             "finish":(900, 500),
         }
         freq, dur = sonidos.get(tipo, (500, 200))
-        # SND_ASYNC para no bloquear Tkinter
         threading.Thread(
             target=lambda: winsound.Beep(freq, dur),
             daemon=True
         ).start()
 
     def _serial_reader(self):
-        """
-        Corre permanentemente en su propio hilo (daemon=True, muere con la app).
-        Lee líneas del puerto serial y deposita el float en la cola.
-        Ignora líneas malformadas silenciosamente.
-        """
+        # Lee líneas del puerto serial y pone el float en la cola.
         while True:
             try:
                 line = ser.readline().decode('utf-8').strip()
@@ -318,12 +301,11 @@ class CoherenciaBCI(tk.Tk):
                     self.serial_queue.put(value)
                     print(f"[SERIAL] recibido: {value} N")
             except (ValueError, UnicodeDecodeError):
-                pass   # línea vacía o basura — ignorar
+                pass   
             except serial.SerialException:
-                break  # puerto desconectado — terminar hilo
+                break  
 
     def serial_send(self, cmd):
-        """Envía un comando al Arduino si el puerto está disponible."""
         if SERIAL_OK and ser and ser.is_open:
             ser.write(cmd)
             print(f"[SERIAL] enviado: {repr(cmd)}")
@@ -436,7 +418,7 @@ class ConfiguracionPage(tk.Frame):
         self.sesionID.pack(side="left", ipady=4)
         self.sesionID.insert(0, "OV")
 
-        # ── Fila de tarjetas ─────────────────────────────────────
+        # Fila de tarjetas 
         cards_row = tk.Frame(self, bg=BG_LIGHT)
         cards_row.pack(fill="both", expand=True, padx=70, pady=5)
 
@@ -449,7 +431,7 @@ class ConfiguracionPage(tk.Frame):
         self._build_orden_card(cards_row)
         self._build_calibracion_card(cards_row)
 
-    # ── Tarjeta 1: Conexión serial ────────────────────────────────
+    # Tarjeta 1: Conexión serial
     def _build_serial_card(self, parent):
         tk.Label(parent, text="Conexión serial", font=F_BTN,
                  fg=TEAL, bg=BG_LIGHT).grid(row=0, column=0, pady=(100, 8))
@@ -481,7 +463,7 @@ class ConfiguracionPage(tk.Frame):
 
 
 
-    # ── Tarjeta 2: Generar orden de sesión ───────────────────────
+    # Tarjeta 2: Generar orden de sesión
     def _build_orden_card(self, parent):
         tk.Label(parent, text="Generar orden de sesión", font=F_BTN,
                  fg=ORANGE, bg=BG_LIGHT).grid(row=0, column=1, pady=(100, 8))
@@ -513,7 +495,7 @@ class ConfiguracionPage(tk.Frame):
 
         
 
-    # ── Tarjeta 3: Calibración ────────────────────────────────────
+    # Tarjeta 3: Calibración ────────────────────────────────────
     def _build_calibracion_card(self, parent):
         tk.Label(parent, text="Calibración", font=F_BTN,
                  fg="#6DAB21", bg=BG_LIGHT).grid(row=0, column=2, pady=(100, 8))
@@ -536,7 +518,7 @@ class ConfiguracionPage(tk.Frame):
         lbl.pack(expand=True, pady=(30, 10))
         lbl.img_ref = img_tk
 
-    # ── Callbacks (conectar con lógica real) ─────────────────────
+    # Callbacks 
     def _conectar(self):
         # TODO: lógica de conexión serial
         self.status_dot.config(fg=GREEN)  # verde si conecta
@@ -549,7 +531,7 @@ class ConfiguracionPage(tk.Frame):
         self.controller.orden_sesion = orden  #  guardar en controlador
         self.controller.participante_id = self.participanteID.get().strip() or "X"  # actualizar ID
         self.controller.sesion_id = self.sesionID.get().strip() or "X"  # actualizar ID de sesión
-        # Crea directorio para guardar registros de este participante (si no existe)
+        # Crea directorio para guardar registros de este participante si no existe
         (Path("registrosCMC") / f"S{self.controller.participante_id}").mkdir(exist_ok=True)
         base = Path("registrosCMC") / f"S{self.controller.participante_id}"
         subcarpetas = ["TXT", "EEG", "EMG", "DINAM"]
@@ -582,13 +564,7 @@ class ConfiguracionPage(tk.Frame):
         
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 class CalibracionPage(tk.Frame):
-    """
-    Barra superior = temporizador del ensayo.
-    Gráfica = fuerza en Newtons en tiempo real.
-    Eje Y se adapta automáticamente al pico registrado.
-    """
     def __init__(self, parent, controller):
         super().__init__(parent, bg=BG_LIGHT)
         self.controller  = controller
@@ -661,7 +637,7 @@ class CalibracionPage(tk.Frame):
         self.result_lbl = tk.Label(bot, text="", font=F_LABEL, fg=NAVY, bg=BG_LIGHT)
         self.result_lbl.pack(side="left", padx=30)
 
-    # ── lifecycle ─────────────────────────────────────────────────────────────
+    # Ciclo de vida
     def on_enter(self):
         if self._running:
             self._stop()
@@ -674,7 +650,7 @@ class CalibracionPage(tk.Frame):
             self._stop()
         self.controller.show_frame("MenuPage")
 
-    # ── control ───────────────────────────────────────────────────────────────
+    # Control
     def _toggle(self):
         if not self._running:
             self._begin()
@@ -692,12 +668,12 @@ class CalibracionPage(tk.Frame):
         # Vaciar cola por si quedaron datos de una sesión anterior
         while not self.controller.serial_queue.empty():
             self.controller.serial_queue.get_nowait()
-        self.controller.serial_send(CMD_START)   # Arduino: empieza a enviar
+        self.controller.serial_send(CMD_START)   # Arduino empieza a enviar
         self._tick()
 
     def _stop(self):
         self._running = False
-        self.controller.serial_send(CMD_STOP)    # Arduino: para de enviar
+        self.controller.serial_send(CMD_STOP)    # Arduino para de enviar
         self.start_btn.config(text="Iniciar")
         self.instr.config(
             text=f"Presiona INICIAR y aplica tu fuerza máxima durante {CALIB_DURATION} segundos.")
@@ -705,14 +681,10 @@ class CalibracionPage(tk.Frame):
     def _tick(self):
         if not self._running:
             return
-        INTERVAL = 10  # ms — frecuencia de refresco de la interfaz
+        INTERVAL = 10  # ms frecuencia de refresco de la interfaz
         # Tiempo real transcurrido en milisegundos
         self._elapsed_ms = (time.perf_counter() - self._start_time) * 1000
 
-        # Leer dato de la cola (no bloqueante)
-        # Si Arduino envía más lento que INTERVAL, get_nowait lanza queue.Empty
-        # y repetimos el último valor para no congelar la gráfica
-        
         # Vaciar la cola y quedarse solo con el dato más reciente
         force_n = None
         while not self.controller.serial_queue.empty():
@@ -725,8 +697,7 @@ class CalibracionPage(tk.Frame):
         if force_n is None:
             # No llegó ningún dato nuevo en este tick
             force_n = self._history[-1] if self._history else 0.
-            #print(f"[COLA] vacía — usando último valor: {force_n:.1f}")
-        
+                    
         self._peak_n = max(self._peak_n, force_n)
         self._history.append(force_n)
 
@@ -742,7 +713,7 @@ class CalibracionPage(tk.Frame):
 
     def _finish(self):
         self._running = False
-        self.controller.serial_send(CMD_STOP)    # ► Arduino: para de enviar
+        self.controller.serial_send(CMD_STOP)    
         self.start_btn.config(text="Iniciar de nuevo")
         self.controller.max_force.set(self._peak_n)
         self.result_lbl.config(
@@ -763,11 +734,7 @@ class CalibracionPage(tk.Frame):
 
     # ── eje Y adaptativo ──────────────────────────────────────────────────────
     def _y_max(self):
-        """
-        Calcula el techo del eje Y redondeando el pico al siguiente múltiplo
-        de 50 N, con un mínimo de 100 N para que la gráfica no sea diminuta
-        al inicio.
-        """
+        
         if not self._history:
             return 100
         peak = max(self._history)
@@ -804,13 +771,7 @@ class CalibracionPage(tk.Frame):
         ctrl.show_frame(mapa[siguiente_cond])
 
 
-# ══════════════════════════════════════════════════════════════════════════════
 class RegistroPage(tk.Frame):
-    """
-    Ensayo de 15 segundos.
-    Muestra la fuerza en % del máximo calibrado.
-    Zona objetivo: 25–35 %.
-    """
     def __init__(self, parent, controller):
         super().__init__(parent, bg=BG_LIGHT)
         self.controller  = controller
@@ -869,7 +830,7 @@ class RegistroPage(tk.Frame):
         self.graph.pack(fill="both", expand=True, padx=50, pady=(8, 0))
         self.graph.bind("<Configure>", lambda e: self._redraw_graph())
 
-    # ── lifecycle ─────────────────────────────────────────────────────────────
+    # Ciclio de vida
     def on_enter(self):
         if self._running:
             self._stop()
@@ -884,7 +845,7 @@ class RegistroPage(tk.Frame):
             self._stop()
         self.controller.show_frame("MenuPage")
 
-    # ── control ───────────────────────────────────────────────────────────────
+    # control
     def _toggle(self):
         if not self._running:
             self._begin()
@@ -894,7 +855,6 @@ class RegistroPage(tk.Frame):
     def _begin(self):
         self._running    = True
         self._start_time = time.perf_counter()   # momento exacto de inicio
-        # No suena al instante — programa los beeps con after()
         self.after(3000,  lambda: self.controller.play_sound("start"))   # beep inicio a los 3 s
         self.after(18000, lambda: self.controller.play_sound("finish"))  # beep fin a los 15 s
         self.after(3000,  lambda: self.instr.config(text="Mantén la fuerza en la zona verde"))   # texto inicio a los 3 s
@@ -909,13 +869,13 @@ class RegistroPage(tk.Frame):
         # Vaciar cola por si quedaron datos de una sesión anterior
         while not self.controller.serial_queue.empty():
             self.controller.serial_queue.get_nowait()
-        self.controller.serial_send(CMD_START)   # ► Arduino: empieza a enviar
+        self.controller.serial_send(CMD_START)   
         self.controller.iniciar_grabacion_eeg(condicion="ME")
         self._tick()
 
     def _stop(self):
         self._running = False
-        self.controller.serial_send(CMD_STOP)    # ► Arduino: para de enviar
+        self.controller.serial_send(CMD_STOP)   
         self.start_btn.config(text="Iniciar")
         self.instr.config(
             text=f"Presiona INICIAR y mantén tu fuerza en la zona verde durante {REGISTRO_DURATION-6} segundos.")
@@ -951,12 +911,9 @@ class RegistroPage(tk.Frame):
         pct = min(force_n / ref * 100, 100)
         self._history.append(pct)
 
-        # color = GREEN_MAIN if 20 <= pct <= 40 else WARN_RED
-        # self.num_lbl.config(text=f"{pct:.0f}", fg=color)
 
 
         if self._elapsed_ms >= 3000:
-            # mostrar fuerza solo después de los primeros 3 segundos (período de calentamiento)
             self._draw_timer()
             self._redraw_graph()
 
@@ -970,7 +927,7 @@ class RegistroPage(tk.Frame):
         
     def _finish(self):
         self._running = False
-        self.controller.serial_send(CMD_STOP)    # ► Arduino: para de enviar
+        self.controller.serial_send(CMD_STOP)    
         #self.controller.play_sound("finish")
         self.start_btn.config(text="Iniciar de nuevo")
         self.instr.config(text="Ensayo completado.")
@@ -985,7 +942,7 @@ class RegistroPage(tk.Frame):
         self._draw_timer()
         self._redraw_graph()
 
-    # ── dibujo ───────────────────────────────────────────────────────────────
+    # dibujo
     def _draw_timer(self, full=False):
         elapsed = (REGISTRO_DURATION-6) * 1000 if full else self._elapsed_ms-3000
         draw_timer_bar(self.bar_cv, self.timer_lbl,
@@ -1025,13 +982,8 @@ class RegistroPage(tk.Frame):
         ctrl.show_frame(mapa[siguiente_cond])
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+
 class MIPage(tk.Frame):
-    """
-    Genera sonido e instrucción
-    Timer
-    
-    """
     def __init__(self, parent, controller):
         super().__init__(parent, bg=NAVY)
         self.controller  = controller
@@ -1071,7 +1023,7 @@ class MIPage(tk.Frame):
 
 
 
-    # ── lifecycle ─────────────────────────────────────────────────────────────
+    # Ciclo de vida
     def on_enter(self):
         if self._running:
             self._stop()
@@ -1086,7 +1038,7 @@ class MIPage(tk.Frame):
             self._stop()
         self.controller.show_frame("MenuPage")
 
-    # ── control ───────────────────────────────────────────────────────────────
+    # control
     def _toggle(self):
         if not self._running:
             self._begin()
@@ -1096,7 +1048,6 @@ class MIPage(tk.Frame):
     def _begin(self):
         self._running    = True
         self._start_time = time.perf_counter()
-        # No suena al instante — programa los beeps con after()
         self.after(3000,  lambda: self.controller.play_sound("start"))   # beep inicio a los 3 s
         self.after(18000, lambda: self.controller.play_sound("finish"))  # beep fin a los 15 s
         self.after(3000,  lambda: self.instr.config(text="Imagina el movimiento"))   # texto inicio a los 3 s
@@ -1151,13 +1102,7 @@ class MIPage(tk.Frame):
         ctrl.indice_actual += 1
         ctrl.show_frame(mapa[siguiente_cond])
 
-# ══════════════════════════════════════════════════════════════════════════════
 class REPage(tk.Frame):
-    """
-    Genera sonido e instrucción
-    Timer
-    
-    """
     def __init__(self, parent, controller):
         super().__init__(parent, bg=PROG_BG)
         self.controller  = controller
@@ -1197,7 +1142,7 @@ class REPage(tk.Frame):
 
 
 
-    # ── lifecycle ─────────────────────────────────────────────────────────────
+    # Ciclo de vida
     def on_enter(self):
         if self._running:
             self._stop()
@@ -1212,7 +1157,7 @@ class REPage(tk.Frame):
             self._stop()
         self.controller.show_frame("MenuPage")
 
-    # ── control ───────────────────────────────────────────────────────────────
+    # control
     def _toggle(self):
         if not self._running:
             self._begin()
@@ -1222,7 +1167,6 @@ class REPage(tk.Frame):
     def _begin(self):
         self._running    = True
         self._start_time = time.perf_counter()
-        # No suena al instante — programa los beeps con after()
         self.after(3000,  lambda: self.controller.play_sound("start"))   # beep inicio a los 3 s
         self.after(18000, lambda: self.controller.play_sound("finish"))  # beep fin a los 31 s
         self.after(3000,  lambda: self.instr.config(text="Mantente en REPOSO"))   # texto inicio a los 3 s
@@ -1245,7 +1189,7 @@ class REPage(tk.Frame):
     def _tick(self):
         if not self._running:
             return
-        INTERVAL = 10  # ms — frecuencia de refresco de la interfaz
+        INTERVAL = 10  # ms  frecuencia de refresco de la interfaz
         
         # Tiempo real transcurrido en milisegundos
         self._elapsed_ms = (time.perf_counter() - self._start_time) * 1000
@@ -1256,7 +1200,6 @@ class REPage(tk.Frame):
 
     def _finish(self):
         self._running = False
-        #self.controller.play_sound("finish")
         self.start_btn.config(text="Iniciar de nuevo")
         self.instr.config(text="Ensayo completado.")
         self.controller.detener_grabacion_eeg()

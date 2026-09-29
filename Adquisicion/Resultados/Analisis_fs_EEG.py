@@ -1,18 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Análisis de frecuencia de muestreo real — EEG Unicorn Hybrid Black
-===================================================================
-Calcula la frecuencia de muestreo efectiva, jitter y genera figuras
-de validación a partir de los CSV generados por la interfaz EEG.
-
-Uso:
-    python analisis_fs_eeg.py                        # pide el archivo
-    python analisis_fs_eeg.py ruta/al/archivo.csv    # directo
-
-Dependencias:
-    pip install pandas numpy matplotlib scipy
-"""
-
 import sys
 import os
 import pandas as pd
@@ -21,8 +6,6 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from scipy.signal import butter, filtfilt
 
-
-# ─── Configuración ────────────────────────────────────────────────────────────
 CANALES   = ['Fz', 'FC3', 'FCz', 'FC4', 'Cz', 'C3', 'C4']
 FS_NOMINAL = 250.0  # Hz
 
@@ -42,7 +25,6 @@ MUT = '#8b949e'
 GRD = '#30363d'
 
 
-# ─── Utilidades ───────────────────────────────────────────────────────────────
 def filtrar(y, lowcut=1, highcut=40, fs=250, order=4):
     nyq = fs * 0.5
     b, a = butter(order, [lowcut / nyq, highcut / nyq], btype='band')
@@ -59,14 +41,7 @@ def estilo_ax(ax):
     ax.title.set_color(FG)
 
 
-# ─── Carga del CSV ────────────────────────────────────────────────────────────
 def cargar_csv(ruta):
-    """
-    Lee el CSV generado por VentanaEEG.
-    El archivo puede tener más columnas que el header si el Unicorn
-    transmite canales adicionales (acelerómetro, giroscopio, etc.).
-    Solo se usan Timestamp + 7 canales EEG.
-    """
     df = pd.read_csv(
         ruta,
         usecols=range(8),
@@ -77,8 +52,6 @@ def cargar_csv(ruta):
     df['t']  = (df['ts'] - df['ts'].iloc[0]).dt.total_seconds()
     return df
 
-
-# ─── Análisis de frecuencia ───────────────────────────────────────────────────
 def analizar_fs(df):
     intervalos_ms = df['ts'].diff().dt.total_seconds().dropna() * 1000
     duracion      = df['t'].iloc[-1]
@@ -116,17 +89,16 @@ def imprimir_resumen(r, nombre_archivo):
     print(f'{sep}\n')
 
 
-# ─── Figura ───────────────────────────────────────────────────────────────────
 def generar_figura(df, r, nombre_archivo):
     fig = plt.figure(figsize=(14, 9), facecolor=BG)
     gs  = gridspec.GridSpec(3, 2, figure=fig, hspace=0.55, wspace=0.35)
 
-    # ── Panel 1: los 7 canales con offset ──────────────────────────────────
+
     ax1 = fig.add_subplot(gs[0, :])
     estilo_ax(ax1)
 
-    escala   = 1e-3          # µV → mV (ajustar si tus unidades son distintas)
-    offset_v = 150           # separación vertical entre canales (mV)
+    escala   = 1e-3          
+    offset_v = 150           
 
     for i, ch in enumerate(CANALES):
         y = df[ch].values * escala
@@ -144,7 +116,6 @@ def generar_figura(df, r, nombre_archivo):
     ax1.legend(fontsize=8, facecolor='#161b22', labelcolor='white',
                framealpha=0.7, loc='upper right', ncol=7)
 
-    # ── Panel 2: histograma de intervalos ──────────────────────────────────
     ax2 = fig.add_subplot(gs[1, 0])
     estilo_ax(ax2)
 
@@ -161,7 +132,6 @@ def generar_figura(df, r, nombre_archivo):
     ax2.set_title('Distribución de intervalos', fontsize=11)
     ax2.legend(fontsize=8, facecolor='#161b22', labelcolor='white', framealpha=0.7)
 
-    # ── Panel 3: intervalos en el tiempo ───────────────────────────────────
     ax3 = fig.add_subplot(gs[1, 1])
     estilo_ax(ax3)
 
@@ -175,7 +145,6 @@ def generar_figura(df, r, nombre_archivo):
     ax3.set_title('Estabilidad temporal del muestreo', fontsize=11)
     ax3.legend(fontsize=8, facecolor='#161b22', labelcolor='white', framealpha=0.7)
 
-    # ── Panel 4: densidad espectral (canal Cz) ─────────────────────────────
     ax4 = fig.add_subplot(gs[2, :])
     estilo_ax(ax4)
 
@@ -210,7 +179,6 @@ def generar_figura(df, r, nombre_archivo):
     return fig
 
 
-# ─── Main ─────────────────────────────────────────────────────────────────────
 def main():
     # Determinar ruta del archivo
     if len(sys.argv) > 1:
